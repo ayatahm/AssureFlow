@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Raise finding{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<form method="post" class="card accent" style="max-width:900px" novalidate>{% csrf_token %}
+  <div class="eyebrow">New finding on</div><h2>{{ target_label }}</h2>
+  <input type="hidden" name="target" value="{{ target_raw }}">
+  {% if form.non_field_errors %}<div class="notice danger">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="form-grid">
+    {% include "components/field.html" with f=form.title full=1 %}
+    {% include "components/field.html" with f=form.description full=1 %}
+    {% include "components/field.html" with f=form.priority %}
+    <div></div>
+    <div class="full"><h3>Remediation action</h3></div>
+    {% include "components/field.html" with f=form.owner %}
+    {% include "components/field.html" with f=form.due_date %}
+    {% include "components/field.html" with f=form.expected_outcome full=1 %}
+  </div>
+  <p class="small muted">Raising a finding does not change the Reviewer conclusion; record that separately.</p>
+  <button class="btn btn-danger" type="submit">Raise finding</button>
+</form>
+{% endblock %}

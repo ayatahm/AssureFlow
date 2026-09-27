@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}{{ rr.control.code }} · {{ review.reference }}{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<div class="page-head">
+  <div><div class="eyebrow">{{ rr.control.domain }}</div><h2 style="margin:0">{{ rr.control.code }} · {{ rr.control.title }}</h2>
+  <div class="sub">{% badge rr.applicability %} {% badge rr.level %}</div></div>
+  <div class="actions"><a class="btn" href="{% url 'reviews:workbench' review.pk %}">← Workbench</a>
+  <a class="btn btn-primary" href="{% url 'assurance:trace' review.pk rr.pk %}">View Assurance Trace</a></div>
+</div>
+<div class="split">
+  <div>
+    <div class="card">
+      <h3>Explanation</h3>
+      <p>{{ rr.control.description }}</p>
+      <p class="small muted">{{ rr.reason }}</p>
+      {% for f in rr.control.framework_refs.all %}<span class="badge badge-navy">{{ f.framework }} {{ f.reference }}</span> {% endfor %}
+    </div>
+    <div class="card">
+      <h3>Requester response</h3>
+      {% for q in questions %}
+        <div style="padding:6px 0;border-bottom:1px solid #EEF1F6">
+          <div class="small muted mono">{{ q.question.code }}</div>
+          <div>{{ q.question.text }}</div>
+          <div>{% badge q.answer %} {% if q.comment %}<span class="small">“{{ q.comment }}”</span>{% endif %}</div>
+          {% if q.answered_by %}<div class="small muted">{{ q.answered_by.full_name }}{% if q.on_behalf %} (on behalf){% endif %} · {{ q.answered_at|date:"j M Y H:i" }}</div>{% endif %}
+        </div>
+      {% empty %}<p class="muted">No question was presented for this control (kept but not asked).</p>{% endfor %}
+      {% for f in flags %}<div class="small" style="margin-top:6px">{% badge f.kind %} from {{ f.source_question.question.code }}{% if f.resolved_at %} · resolved {{ f.resolved_at|date:"j M Y" }}{% endif %}</div>{% endfor %}
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Evidence</h3>
+      {% if review.state == "IN_REVIEW" %}<a class="btn btn-sm" href="{% url 'assurance:evidence_upload' review.pk %}?target=requirement:{{ rr.pk }}">+ Add evidence</a>{% endif %}</div>
+      {% include "assurance/_evidence_table.html" with links=evidence %}
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Findings</h3>{% if perm.finding_raise %}<a class="btn btn-sm btn-danger" href="{% url 'assurance:finding_new' review.pk %}?target=requirement:{{ rr.pk }}">Raise finding</a>{% endif %}</div>
+      {% for f in findings %}<div><a href="{% url 'assurance:finding' review.pk f.pk %}">{{ f.code }}</a> {{ f.title }} {% badge f.priority %}</div>{% empty %}<p class="muted small">None.</p>{% endfor %}
+    </div>
+  </div>
+  <aside>
+    <div class="card accent">
+      <h3>Reviewer conclusion</h3>
+      {% if conclusion %}<p>Current: {% badge conclusion.status %}</p>{% elif stale %}<div class="notice">An answer changed after the last conclusion. Re-review is required; the earlier conclusion is kept as history.</div>{% else %}<p class="muted">No conclusion recorded.</p>{% endif %}
+      {% if can_conclude %}
+      <form method="post" novalidate>{% csrf_token %}
+        <div class="field">
+          <div class="choices">
+            {% for value, label in statuses %}<label class="choice"><input type="radio" name="status" value="{{ value }}" {% if value == "VERIFIED" and not can_verify %}disabled{% endif %}> {{ label }}</label>{% endfor %}
+          </div>
+          {{ form.status.errors }}
+        </div>
+        {% if not can_verify %}<p class="small notice">You authored an answer or evidence for this control. Another assigned Reviewer must record Verified.</p>{% endif %}
+        {% include "components/field.html" with f=form.notes %}
+        <button class="btn btn-primary" type="submit">Record conclusion</button>
+      </form>
+      {% else %}<p class="small muted">Conclusions can be recorded while the review is In Review.</p>{% endif %}
+    </div>
+    <div class="card">
+      <h3>History</h3>
+      {% for c in history %}<div class="small" style="padding:4px 0;border-bottom:1px solid #EEF1F6">{% badge c.status %} {{ c.decided_by.full_name }} · {{ c.decided_at|date:"j M Y H:i" }}{% if c.notes %}<div class="muted">{{ c.notes }}</div>{% endif %}</div>{% empty %}<p class="muted small">No history.</p>{% endfor %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

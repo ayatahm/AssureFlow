@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}{{ item.control.source_id }} · {{ review.reference }}{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<div class="page-head"><div><div class="eyebrow">{{ item.control.raw_category }}</div><h2 style="margin:0">{{ item.control.source_id }} · {{ item.control.control_name }}</h2></div>
+<a class="btn" href="{% url 'reviews:technical' review.pk %}">← Technical scope</a></div>
+<div class="split">
+  <div>
+    <div class="card">
+      <dl class="facts">
+        <dt>Risk</dt><dd>{{ item.control.risk_description }}</dd>
+        <dt>Control</dt><dd>{{ item.control.control_description }}</dd>
+        <dt>Testing guidance</dt><dd>{{ item.control.testing_process }}</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Supporting evidence</h3>
+      {% if review.state == "IN_ASSESSMENT" or review.state == "IN_REVIEW" %}<a class="btn btn-sm" href="{% url 'assurance:evidence_upload' review.pk %}?target=technical:{{ item.pk }}">+ Add evidence</a>{% endif %}</div>
+      {% include "assurance/_evidence_table.html" with links=evidence %}
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Technical findings</h3>{% if perm.finding_raise %}<a class="btn btn-sm btn-danger" href="{% url 'assurance:finding_new' review.pk %}?target=technical:{{ item.pk }}">Record finding</a>{% endif %}</div>
+      {% for f in findings %}<div><a href="{% url 'assurance:finding' review.pk f.pk %}">{{ f.code }}</a> {{ f.title }} {% badge f.priority %}</div>{% empty %}<p class="muted small">None recorded.</p>{% endfor %}
+    </div>
+  </div>
+  <aside class="card accent">
+    <h3>Scope &amp; result</h3>
+    {% if editable %}
+      <form method="post" novalidate>{% csrf_token %}
+        <div class="field"><label class="choice">{{ form.included }} Included in scope</label></div>
+        {% include "components/field.html" with f=form.exclusion_reason %}
+        {% include "components/field.html" with f=form.result %}
+        {% include "components/field.html" with f=form.notes %}
+        <button class="btn btn-primary" type="submit">Save</button>
+      </form>
+    {% else %}
+      <p>{% if item.included %}Included{% else %}Excluded — {{ item.exclusion_reason }}{% endif %}</p>
+      <p>Result: {{ item.get_result_display|default:"Not recorded" }}</p>
+      {% if item.notes %}<p class="pre small">{{ item.notes }}</p>{% endif %}
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% load af %}
+<div class="review-head">
+  <div class="page-head" style="margin-bottom:0">
+    <div>
+      <div class="ref">{{ review.reference }}</div>
+      <h1>{{ review.title }}</h1>
+    </div>
+    <div class="actions no-print">
+      {% if perm.review_withdraw %}<a class="btn btn-sm btn-danger" href="{% url 'reviews:withdraw' review.pk %}">Withdraw</a>{% endif %}
+    </div>
+  </div>
+  <div class="review-meta">
+    <span>{{ review.get_request_type_display }}</span>
+    {% badge review.state %}
+    {% if review.classification %}<span>Classification {% badge review.classification %}</span>{% endif %}
+    {% if review.state == "COMPLETED" %}{% badge review.outcome %}{% endif %}
+    <span>{{ review.department }}</span>
+    {% if review.target_date %}<span>Target {{ review.target_date|date:"j M Y" }}</span>{% endif %}
+    <span>{% for a in participants %}{{ a.get_role_display }}: <strong>{{ a.user.full_name }}</strong>{% if not forloop.last %} · {% endif %}{% endfor %}</span>
+  </div>
+  <nav class="tabs">
+    <a href="{% url 'reviews:detail' review.pk %}" class="{% if tab == 'overview' %}active{% endif %}">Overview</a>
+    {% if not is_business_owner %}
+      <a href="{% url 'reviews:assessment' review.pk %}" class="{% if tab == 'assessment' %}active{% endif %}">Assessment</a>
+    {% endif %}
+    {% if perm.review_workbench %}<a href="{% url 'reviews:workbench' review.pk %}" class="{% if tab == 'workbench' %}active{% endif %}">Workbench</a>{% endif %}
+    {% if not is_business_owner and review.generated_at %}<a href="{% url 'reviews:technical' review.pk %}" class="{% if tab == 'technical' %}active{% endif %}">Technical Scope</a>{% endif %}
+    <a href="{% url 'assurance:evidence' review.pk %}" class="{% if tab == 'evidence' %}active{% endif %}">Evidence</a>
+    {% if perm.findings_list %}<a href="{% url 'assurance:findings' review.pk %}" class="{% if tab == 'findings' %}active{% endif %}">Findings</a>{% endif %}
+    <a href="{% url 'assurance:risk' review.pk %}" class="{% if tab == 'risk' %}active{% endif %}">Compliance &amp; Risk</a>
+    <a href="{% url 'assurance:acceptance' review.pk %}" class="{% if tab == 'acceptance' %}active{% endif %}">Risk Acceptance</a>
+    {% if perm.review_audit %}<a href="{% url 'reviews:audit' review.pk %}" class="{% if tab == 'activity' %}active{% endif %}">Activity Log</a>{% endif %}
+    <a href="{% url 'reporting:report' review.pk %}" class="{% if tab == 'report' %}active{% endif %}">Report</a>
+  </nav>
+</div>

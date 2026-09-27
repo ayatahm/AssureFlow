@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Dashboard</div>
+    <h1>{{ greeting }}, {{ request.user.first_name }}</h1>
+    <div class="sub">Raise review → understand context → tailor assessment → provide evidence → InfoSec concludes → remediate or accept risk → issue report</div>
+  </div>
+  {% if can_create %}<a class="btn btn-brand" href="{% url 'reviews:new' %}">+ New Security Review</a>{% endif %}
+</div>
+
+<div class="grid grid-4" style="margin-bottom:16px">
+  <a class="metric" href="{% url 'reviews:list' %}"><div class="label">My Reviews</div><div class="value">{{ metrics.mine }}</div></a>
+  <div class="metric"><div class="label">Awaiting My Action</div><div class="value">{{ metrics.awaiting }}</div></div>
+  <div class="metric"><div class="label">In Progress</div><div class="value">{{ metrics.in_progress }}</div></div>
+  <a class="metric" href="{% url 'reviews:list' %}?state=COMPLETED"><div class="label">Completed</div><div class="value">{{ metrics.completed }}</div></a>
+</div>
+
+{% if pending_acceptances %}
+<div class="card warn" id="acceptances">
+  <div class="card-head"><h2>Pending risk acceptances</h2></div>
+  <table>
+    <thead><tr><th>Request</th><th>Review</th><th>Residual risk presented</th><th>Expiry</th><th></th></tr></thead>
+    <tbody>{% for a in pending_acceptances %}
+      <tr><td class="mono">{{ a.code }}</td><td>{{ a.review.reference }} · {{ a.review.title }}</td>
+      <td>{% badge a.risk_record.residual %}</td><td>{{ a.expiry_date|date:"j M Y" }}</td>
+      <td><a class="btn btn-sm btn-primary" href="{% url 'assurance:decide' a.pk %}">Review &amp; decide</a></td></tr>
+    {% endfor %}</tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if waiting_conclusion is not None %}
+<div class="grid grid-2" id="reviewer-actions">
+  <div class="card">
+    <div class="card-head"><h3>Reviews waiting for conclusion</h3><span class="muted">{{ waiting_conclusion.count }}</span></div>
+    {% for r in waiting_conclusion %}<div style="padding:6px 0;border-bottom:1px solid #EEF1F6"><a href="{% url 'reviews:workbench' r.pk %}">{{ r.reference }}</a> · {{ r.title }}</div>{% empty %}<div class="empty">Nothing waiting.</div>{% endfor %}
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>Remediation submitted for verification</h3><span class="muted">{{ submitted_actions.count }}</span></div>
+    {% for a in submitted_actions %}<div style="padding:6px 0;border-bottom:1px solid #EEF1F6"><a href="{% url 'assurance:action' a.pk %}">{{ a.code }}</a> · {{ a.finding.review.reference }} · {{ a.owner.full_name }}</div>{% empty %}<div class="empty">No submissions.</div>{% endfor %}
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>Overdue actions</h3><span class="muted">{{ overdue_actions.count }}</span></div>
+    {% for a in overdue_actions %}<div style="padding:6px 0;border-bottom:1px solid #EEF1F6"><a href="{% url 'assurance:action' a.pk %}">{{ a.code }}</a> · due {{ a.due_date|date:"j M Y" }} · {{ a.owner.full_name }}</div>{% empty %}<div class="empty">No overdue actions.</div>{% endfor %}
+    <p class="small muted" style="margin-top:8px">Open findings with unfinished actions: {{ open_findings }}</p>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>Acceptance requests waiting on Business Owner</h3><span class="muted">{{ awaiting_owner.count }}</span></div>
+    {% for a in awaiting_owner %}<div style="padding:6px 0;border-bottom:1px solid #EEF1F6">{{ a.code }} · {{ a.review.reference }} · {{ a.business_owner.full_name }}</div>{% empty %}<div class="empty">None pending.</div>{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if my_actions %}
+<div class="card" id="my-actions">
+  <div class="card-head"><h3>My remediation actions</h3></div>
+  <table><thead><tr><th>Action</th><th>Review</th><th>Finding</th><th>Due</th><th>State</th></tr></thead><tbody>
+  {% for a in my_actions %}<tr><td><a href="{% url 'assurance:action' a.pk %}">{{ a.code }}</a></td><td>{{ a.finding.review.reference }}</td><td>{{ a.finding.title }}</td>
+  <td class="nowrap">{{ a.due_date|date:"j M Y" }}{% if a.due_date < today %} <span class="badge badge-red">Overdue</span>{% endif %}</td><td>{% badge a.state %}</td></tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-head"><h2>My reviews</h2><a href="{% url 'reviews:list' %}">View all</a></div>
+  {% include "reviews/_table.html" with reviews=reviews %}
+</div>
+
+{% if decided_acceptances %}
+<div class="card">
+  <div class="card-head"><h3>Accepted / Declined history</h3></div>
+  <table><thead><tr><th>Request</th><th>Review</th><th>Decision</th><th>Decided</th></tr></thead><tbody>
+  {% for a in decided_acceptances %}<tr><td><a href="{% url 'assurance:decide' a.pk %}">{{ a.code }}</a></td><td>{{ a.review.reference }}</td><td>{% badge a.state %}</td><td>{{ a.decided_at|date:"j M Y H:i" }}</td></tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endif %}
+
+<div class="card info" id="help">
+  <h3>How AssureFlow works</h3>
+  <p class="small">The system tailors the assessment from triage answers and flags answers for attention, but only an Information Security Reviewer records assurance conclusions, and only an assigned Business Owner decides Formal Business Risk Acceptance. Uploading evidence never verifies a control automatically.</p>
+</div>
+{% endblock %}

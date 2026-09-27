@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}Completion · {{ review.reference }}{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<div class="split">
+  <div class="card accent">
+    <h2>Final review checklist</h2>
+    <ul class="checklist">
+      {% for label, ok in chk.checklist %}<li><span class="tick {% if ok %}ok{% else %}no{% endif %}">{% if ok %}✓{% else %}✕{% endif %}</span>{{ label }}</li>{% endfor %}
+    </ul>
+    {% if chk.blockers %}
+      <div class="notice danger" style="margin-top:14px"><strong>Blockers</strong><ul>{% for b in chk.blockers %}<li>{{ b }}</li>{% endfor %}</ul></div>
+    {% else %}
+      <div class="notice info" style="margin-top:14px">All guards pass. Derived reporting outcome: {% badge chk.outcome %}</div>
+    {% endif %}
+    {% if chk.unresolved %}
+      <h3 style="margin-top:14px">Remaining exposure and treatment</h3>
+      <table><thead><tr><th>Item</th><th>Treatment</th></tr></thead><tbody>
+      {% for target, status, acc in chk.unresolved %}<tr><td class="mono">{% if target.control.code %}{{ target.control.code }}{% else %}{{ target.control.source_id }}{% endif %}</td><td>{% badge status %}{% if acc %} {{ acc.code }}{% endif %}</td></tr>{% endfor %}
+      </tbody></table>
+    {% endif %}
+  </div>
+  <aside>
+    <div class="card">
+      <h3>Final residual risk</h3>
+      {% if chk.final_risk %}<p>{% badge chk.final_risk.residual %} <span class="small muted">R-{{ chk.final_risk.pk }}, read-only</span></p>
+      <p class="small muted">To change it, record a new risk judgement on the Compliance &amp; Risk tab.</p>{% else %}<p class="muted">No risk record.</p>{% endif %}
+    </div>
+    <form method="post" class="card accent" novalidate>{% csrf_token %}
+      {% include "components/field.html" with f=form.final_summary %}
+      {% include "components/field.html" with f=form.conditions %}
+      <details><summary class="btn btn-navy" {% if chk.blockers %}aria-disabled="true"{% endif %}>Complete Review</summary>
+        <div class="notice" style="margin-top:10px">Completion pins the final risk record, freezes the review and issues report revision 1. This cannot be undone; later work uses a new linked review.</div>
+        <button class="btn btn-navy" type="submit" {% if chk.blockers %}disabled{% endif %}>Confirm completion</button>
+      </details>
+    </form>
+  </aside>
+</div>
+{% endblock %}

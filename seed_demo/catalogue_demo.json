@@ -1,0 +1,31 @@
+{
+  "format": "assureflow-catalogue-v1",
+  "synthetic": true,
+  "version": "SYN-TC-1.0",
+  "label": "SYNTHETIC DEMO technical testing catalogue — invented guidance",
+  "scope_tags": [
+    {"code": "API", "label": "API"},
+    {"code": "APPLICATION", "label": "Application"},
+    {"code": "OS", "label": "OS"},
+    {"code": "SAAS", "label": "SaaS"},
+    {"code": "HARDWARE", "label": "New Hardware"},
+    {"code": "PERSONAL_DATA", "label": "Personal Data"},
+    {"code": "THIRD_PARTY", "label": "Third Party"}
+  ],
+  "controls": [
+    {"source_id": "TT-01", "category": "API", "tags": ["API"], "control_name": "API authentication review", "risk": "Unauthenticated calls expose data.", "description": "Confirm every endpoint requires authentication.", "testing": "Call each endpoint without credentials in a test environment and confirm rejection."},
+    {"source_id": "TT-02", "category": "API", "tags": ["API"], "control_name": "API input validation", "risk": "Malformed input causes injection or crashes.", "description": "Inputs are validated server-side.", "testing": "Review schema validation and submit boundary values in test."},
+    {"source_id": "TT-03", "category": "Application", "tags": ["APPLICATION"], "control_name": "Session management review", "risk": "Session hijacking.", "description": "Sessions time out and cookies are protected.", "testing": "Inspect cookie flags and idle/absolute timeout behaviour."},
+    {"source_id": "TT-04", "category": "Application", "tags": ["APPLICATION"], "control_name": "Authorisation checks", "risk": "Horizontal privilege escalation.", "description": "Server-side checks on every object access.", "testing": "Attempt cross-account object access with a second test user."},
+    {"source_id": "TT-05", "category": "Application", "tags": ["APPLICATION", "API"], "control_name": "Dependency vulnerability review", "risk": "Known-vulnerable libraries.", "description": "Third-party components are inventoried and patched.", "testing": "Review the dependency inventory against published advisories."},
+    {"source_id": "TT-06", "category": "OS", "tags": ["OS"], "control_name": "OS hardening baseline", "risk": "Default services and accounts.", "description": "Hosts follow a hardening baseline.", "testing": "Compare host configuration to the baseline checklist."},
+    {"source_id": "TT-07", "category": "OS", "tags": ["OS"], "control_name": "Patch level review", "risk": "Unpatched vulnerabilities.", "description": "OS patches are current.", "testing": "Review patch reports for in-scope hosts."},
+    {"source_id": "TT-08", "category": "SaaS", "tags": ["SAAS", "THIRD_PARTY"], "control_name": "SaaS tenant configuration review", "risk": "Insecure tenant defaults.", "description": "Tenant security settings are reviewed.", "testing": "Review tenant admin settings against vendor hardening guidance."},
+    {"source_id": "TT-09", "category": "SaaS", "tags": ["SAAS"], "control_name": "SaaS SSO and MFA", "risk": "Account takeover.", "description": "Users authenticate through SSO/MFA.", "testing": "Confirm local login is disabled or protected by MFA."},
+    {"source_id": "TT-10", "category": "Hardware", "tags": ["HARDWARE"], "control_name": "Device firmware review", "risk": "Outdated firmware.", "description": "Firmware is current and supported.", "testing": "Record firmware versions and compare to vendor advisories."},
+    {"source_id": "TT-11", "category": "Data", "tags": ["PERSONAL_DATA"], "control_name": "Personal data flow review", "risk": "Unexpected disclosure.", "description": "Personal data flows are documented and minimised.", "testing": "Walk through the data-flow diagram with the project team."},
+    {"source_id": "TT-12", "category": "Data", "tags": ["PERSONAL_DATA", "APPLICATION"], "control_name": "Test data masking", "risk": "Real personal data in test environments.", "description": "Test environments use masked or synthetic data.", "testing": "Sample test environment records."},
+    {"source_id": "TT-13", "category": "Third party", "tags": ["THIRD_PARTY"], "control_name": "Vendor remote access review", "risk": "Uncontrolled vendor access.", "description": "Vendor access is approved, logged and time-bound.", "testing": "Review the vendor access procedure and recent access logs."},
+    {"source_id": "TT-14", "category": "Third party", "tags": ["THIRD_PARTY", "SAAS"], "control_name": "Independent assurance report review", "risk": "Unverified vendor controls.", "description": "An independent assurance report has been reviewed.", "testing": "Review the report scope, period and exceptions."}
+  ]
+}

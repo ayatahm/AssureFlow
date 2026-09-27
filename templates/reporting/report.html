@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}Report · {{ review.reference }}{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+{% if draft and chk %}
+  <div class="card warn no-print"><strong>Draft preview.</strong> {% if chk.blockers %}{{ chk.blockers|length }} completion blocker(s) remain.{% else %}All completion guards pass.{% endif %}
+  {% if perm.review_complete %}<a href="{% url 'assurance:complete' review.pk %}">Go to completion →</a>{% endif %}</div>
+{% endif %}
+{% if not data %}
+  <div class="card empty">A preview is available once the assessment has been generated and a risk judgement recorded.</div>
+{% else %}
+<div class="actions no-print" style="justify-content:flex-end;margin-bottom:10px">
+  <button class="btn btn-primary" onclick="window.print()">Download / Print PDF</button>
+</div>
+<article class="report">
+  {% if draft %}<div class="draft-watermark">DRAFT — NOT AN ISSUED REPORT</div>{% endif %}
+  <div class="cover">
+    <div>
+      <div class="eyebrow">Information Security Assessment Report</div>
+      <h1 style="margin:4px 0">{{ data.review.title }}</h1>
+      <div class="mono">{{ data.review.reference }}</div>
+    </div>
+    <div style="text-align:right">
+      <div><span class="badge badge-{% if data.outcome.code == 'MET' %}green{% elif data.outcome.code == 'MET_WITH_EXCEPTIONS' %}amber{% else %}red{% endif %} outcome">{{ data.outcome.label|default:"Outcome pending" }}</span></div>
+      <div class="small muted" style="margin-top:6px">{% if draft %}Preview generated now{% else %}Revision {{ data.report.revision }} · issued {{ data.report.issued_at }}{% endif %}</div>
+      {% if snapshot %}<div class="small">SHA-256 <span class="hash">{{ snapshot.sha256 }}</span></div>
+      <div class="small">{% if hash_ok %}<span class="badge badge-green">Stored data matches recorded digest</span>{% else %}<span class="badge badge-red">Digest mismatch</span>{% endif %}</div>{% endif %}
+    </div>
+  </div>
+  {% if data.projection == "business_owner" %}<p class="notice info small">Business Owner view: limited to the items covered by your risk-acceptance decisions.</p>{% endif %}
+
+  <h2>1. Review details</h2>
+  <dl class="facts">
+    <dt>Request type</dt><dd>{{ data.review.request_type_label }}</dd>
+    <dt>Department</dt><dd>{{ data.review.department }}</dd>
+    <dt>Project owner</dt><dd>{{ data.review.project_owner }}</dd>
+    <dt>Purpose</dt><dd class="pre">{{ data.review.purpose }}</dd>
+    <dt>Participants</dt><dd>{% for p in data.review.participants %}{{ p.role|title }}: {{ p.user.name }}{% if not forloop.last %}; {% endif %}{% endfor %}</dd>
+    <dt>Classification</dt><dd>{% badge data.review.classification %} <span class="small muted">{{ data.review.classification_reason }}</span></dd>
+    {% if data.report.issued_by %}<dt>Issued by</dt><dd>{{ data.report.issued_by.name }}</dd>{% endif %}
+  </dl>
+
+  <h2>2. Scope, versions and method</h2>
+  <dl class="facts">
+    <dt>Rule baseline</dt><dd>{{ data.sources.rule_set.version }} — {{ data.sources.rule_set.label }}</dd>
+    <dt>Technical catalogue</dt><dd>{{ data.sources.technical_catalogue.version }}</dd>
+    <dt>Risk scale</dt><dd>{{ data.sources.risk_scale }}</dd>
+    <dt>Scope</dt><dd>{{ data.scope_summary.applicable }} of {{ data.scope_summary.evaluated }} requirements applicable ({{ data.scope_summary.required }} Required, {{ data.scope_summary.recommended }} Recommended, {{ data.scope_summary.optional }} Optional); {{ data.scope_summary.questions_asked }} questions asked, {{ data.scope_summary.questions_removed }} removed as irrelevant.</dd>
+  </dl>
+  <p class="small muted">Controls were selected automatically from triage answers. All assurance conclusions and treatment decisions were recorded by people; AssureFlow does not calculate risk or verify controls.</p>
+
+  <h2>3. Outcome and Reviewer summary</h2>
+  <p><strong>{{ data.outcome.label }}</strong> — a neutral summary of recorded conclusions and treatment decisions. It is not release approval.</p>
+  <p class="pre">{{ data.outcome.summary }}</p>
+  <p><strong>Conditions:</strong> {{ data.outcome.conditions }}</p>
+
+  <h2>4. Requirements and conclusions</h2>
+  <table><thead><tr><th>Control</th><th>Level</th><th>Conclusion</th><th>Evidence</th><th>Treatment</th></tr></thead><tbody>
+  {% for r in data.requirements %}{% if r.applicability == "KEEP" %}
+    <tr><td><span class="mono">{{ r.code }}</span> {{ r.title }}</td><td>{% badge r.level %}</td><td>{% badge r.conclusion.status %}</td><td>{{ r.evidence|length }}</td>
+    <td>{% if r.treatment %}{% badge r.treatment.status %}{% endif %}{% if r.compliance_decision %} <span class="small">{{ r.compliance_decision.decision|label }}</span>{% endif %}</td></tr>
+  {% endif %}{% endfor %}
+  </tbody></table>
+  <h3 style="margin-top:12px">Scope appendix — skipped requirements</h3>
+  <table><tbody>{% for r in data.requirements %}{% if r.applicability == "SKIP" %}<tr><td class="mono">{{ r.code }}</td><td>{{ r.title }}</td><td class="small muted">{{ r.reason }}</td></tr>{% endif %}{% endfor %}</tbody></table>
+
+  <h2>5. Technical testing guidance</h2>
+  <p class="small">Confirmed scope: {% for t in data.technical.tags %}{% if t.confirmed %}{{ t.label }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}{% if data.technical.confirmation_note %} — {{ data.technical.confirmation_note }}{% endif %}. Guidance only; no automated testing is claimed.</p>
+  <table><thead><tr><th>Item</th><th>Status</th><th>Recorded result</th></tr></thead><tbody>
+  {% for i in data.technical.items %}<tr><td><span class="mono">{{ i.source_id }}</span> {{ i.name }}</td><td>{% if i.included %}Included{% else %}Excluded — {{ i.exclusion_reason }}{% endif %}{% if i.added_by_reviewer %} (added by Reviewer){% endif %}</td><td>{{ i.result|default:"—" }}</td></tr>{% endfor %}
+  </tbody></table>
+
+  <h2>6. Findings and actions</h2>
+  {% for f in data.findings %}
+    <div class="card"><strong>{{ f.code }}</strong> {{ f.title }} {% badge f.priority %} <span class="small muted">on {{ f.origin.code }}</span>
+    <p class="small pre">{{ f.description }}</p>
+    {% for a in f.actions %}<div class="small">{{ a.code }} · {{ a.owner.name }} · {% badge a.state %} · due {{ a.due_date }}{% if a.alternative_treatment %} · remains OPEN; alternative treatment {% badge a.alternative_treatment.status %}{% endif %}</div>{% endfor %}</div>
+  {% empty %}<p class="muted">No findings.</p>{% endfor %}
+
+  <h2>7. Compliance decisions and risk judgement</h2>
+  <dl class="facts">
+    <dt>Risk record</dt><dd>R-{{ data.risk.id }} · inherent {% badge data.risk.inherent %} · residual {% badge data.risk.residual %}</dd>
+    <dt>Rationale</dt><dd class="pre">{{ data.risk.rationale }}</dd>
+    <dt>Assessed by</dt><dd>{{ data.risk.assessed_by.name }}, {{ data.risk.assessed_at }}</dd>
+  </dl>
+
+  <h2>8. Business Risk Acceptance decisions</h2>
+  {% for a in data.acceptances %}
+    <div class="card"><strong>{{ a.code }}</strong> {% badge a.state %} · {{ a.business_owner.name }} · items {% for i in a.items %}{{ i.code }}{% if not forloop.last %}, {% endif %}{% endfor %}
+      <div class="small">Risk record R-{{ a.risk_record_id }}{% if not a.refers_to_final_risk %} (superseded){% endif %} · review {{ a.review_date }} · expiry {{ a.expiry_date }} · {% if a.valid_at_issue %}<span class="badge badge-green">valid at issue</span>{% elif a.state == "ACCEPTED" %}<span class="badge badge-grey">not valid at issue</span>{% endif %}</div>
+      <div class="small pre">{{ a.decision_note }}</div></div>
+  {% empty %}<p class="muted">No Formal Business Risk Acceptance was required.</p>{% endfor %}
+
+  <h2>9. Assurance Trace appendix</h2>
+  {% for r in data.requirements %}{% if r.applicability == "KEEP" %}
+    <div style="padding:6px 0;border-bottom:1px solid #EEF1F6" class="small">
+      <strong class="mono">{{ r.code }}</strong> — {{ r.reason }}
+      {% for q in r.questions %}<div>Q {{ q.code }}: {{ q.answer|label|default:"—" }} ({{ q.answered_by.name|default:"—" }}{% if q.on_behalf %}, on behalf{% endif %})</div>{% endfor %}
+      {% for e in r.evidence %}<div>Evidence: {{ e.name }} <span class="hash">{{ e.sha256 }}</span></div>{% endfor %}
+      {% if r.conclusion %}<div>Conclusion: {{ r.conclusion.status|label }} by {{ r.conclusion.decided_by.name }} ({{ r.conclusion.decided_at }})</div>{% endif %}
+    </div>
+  {% endif %}{% endfor %}
+  <p class="small muted" style="margin-top:16px">The SHA-256 digest covers the stored report data (serializer {{ snapshot.serializer_version|default:"af-json-v1" }}), not this printed page. It detects changes against the recorded digest; it is not a digital signature.</p>
+</article>
+{% endif %}
+{% endblock %}

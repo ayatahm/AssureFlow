@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}Compliance & Risk · {{ review.reference }}{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<div class="split">
+  <div class="card" style="padding:0">
+    <div class="card-head" style="padding:16px 20px 0"><h2>Project Compliance Decisions</h2><span class="small muted">Per Security Gap · not risk acceptance</span></div>
+    <table>
+      <thead><tr><th>Requirement</th><th>Level</th><th>Conclusion</th><th>Decision</th><th>Source guidance</th><th></th></tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr><td><span class="mono">{{ row.rr.control.code }}</span><div class="small">{{ row.rr.control.title }}</div></td>
+        <td>{% badge row.rr.level %}</td><td>{% badge row.conclusion.status %}</td>
+        <td>{% if row.decision %}{% badge row.decision.decision row.decision.get_decision_display %}<div class="small muted">{{ row.decision.note }}</div>{% else %}<span class="muted">None</span>{% endif %}</td>
+        <td class="small muted">{% if row.decision %}{{ row.guidance|get_item:row.decision.decision }}{% endif %}</td>
+        <td>{% if review.state == "IN_REVIEW" and not is_business_owner %}<a class="btn btn-sm" href="{% url 'assurance:compliance' review.pk row.rr.pk %}">Record</a>{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="6" class="empty">No current Security Gaps.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    {% if technical_unresolved %}<div style="padding:12px 20px" class="small">Unresolved technical findings: {% for t in technical_unresolved %}<span class="mono">{{ t.control.source_id }}</span>{% if not forloop.last %}, {% endif %}{% endfor %} — treat through remediation or Formal Business Risk Acceptance.</div>{% endif %}
+  </div>
+  <aside>
+    <div class="card accent">
+      <h3>Risk judgement</h3>
+      <p class="small notice info">Risk ratings are Reviewer judgement and are not calculated automatically.</p>
+      {% if latest_risk %}
+        <div class="kv"><span class="k">Inherent</span><span>{% badge latest_risk.inherent %}</span><span class="k">Residual</span><span>{% badge latest_risk.residual %}</span>
+        <span class="k">Recorded by</span><span>{{ latest_risk.assessed_by.full_name }}, {{ latest_risk.assessed_at|date:"j M Y H:i" }}</span></div>
+        <p class="small pre" style="margin-top:8px">{{ latest_risk.rationale }}</p>
+        {% if review.final_risk_record_id %}<p class="small badge badge-slate">Pinned at completion (R-{{ review.final_risk_record_id }})</p>{% endif %}
+      {% else %}<p class="muted">No risk judgement recorded.</p>{% endif %}
+      {% if perm.risk_record %}
+      <form method="post" novalidate style="margin-top:12px;border-top:1px solid var(--af-border);padding-top:12px">{% csrf_token %}
+        <h3>{% if latest_risk %}Record a reassessment{% else %}Record risk{% endif %}</h3>
+        <div class="grid grid-2">{% include "components/field.html" with f=risk_form.inherent %}{% include "components/field.html" with f=risk_form.residual %}</div>
+        {% include "components/field.html" with f=risk_form.rationale %}
+        <button class="btn btn-primary" type="submit">Save risk record</button>
+        {% if latest_risk %}<p class="small muted" style="margin-top:6px">A new record becomes authoritative. Acceptances tied to the older record will need a new decision.</p>{% endif %}
+      </form>
+      {% endif %}
+    </div>
+    <div class="card">
+      <h3>Risk history</h3>
+      {% for r in risk_history %}<div class="small" style="padding:4px 0;border-bottom:1px solid #EEF1F6">R-{{ r.pk }} · {% badge r.inherent %} → {% badge r.residual %} · {{ r.assessed_by.full_name }} · {{ r.assessed_at|date:"j M Y H:i" }}</div>{% empty %}<p class="muted small">None.</p>{% endfor %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

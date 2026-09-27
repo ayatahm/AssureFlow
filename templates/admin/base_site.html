@@ -1,0 +1,5 @@
+{% extends "admin/base.html" %}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | AssureFlow Administration{% endblock %}
+{% block branding %}<div id="site-name"><a href="{% url 'afadmin:index' %}">AssureFlow Administration</a></div>{% endblock %}
+{% block userlinks %}<a href="{% url 'core:dashboard' %}">Back to AssureFlow</a>{% endblock %}
+{% block nav-global %}{% endblock %}

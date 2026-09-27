@@ -1,0 +1,41 @@
+{% with p=request.path %}
+<nav class="nav">
+  <a href="{% url 'core:dashboard' %}" class="{% if p == '/dashboard/' %}active{% endif %}">Dashboard</a>
+  {% if af_is_requester or af_is_reviewer %}
+    <a href="{% url 'reviews:new' %}" class="{% if p == '/reviews/new/' %}active{% endif %}">New Security Review</a>
+  {% endif %}
+  {% if af_is_reviewer %}
+    <div class="nav-section">Information Security</div>
+    <a href="{% url 'reviews:list' %}" class="{% if p == '/reviews/' and not request.GET.state %}active{% endif %}">Reviews</a>
+    <a href="{% url 'reviews:list' %}?state=IN_REVIEW" class="{% if request.GET.state == 'IN_REVIEW' %}active{% endif %}">My Workbench</a>
+    <a href="{% url 'core:dashboard' %}#reviewer-actions">Findings / Actions</a>
+    <a href="{% url 'reviews:list' %}?state=COMPLETED" class="{% if request.GET.state == 'COMPLETED' %}active{% endif %}">Reports</a>
+    <a href="#" aria-disabled="true">Posture <span class="soon">later</span></a>
+    <a href="#" aria-disabled="true">Accepted Risks <span class="soon">later</span></a>
+  {% endif %}
+  {% if af_is_requester and not af_is_reviewer %}
+    <div class="nav-section">My work</div>
+    <a href="{% url 'reviews:list' %}" class="{% if p == '/reviews/' and not request.GET.state %}active{% endif %}">My Reviews</a>
+    <a href="{% url 'core:dashboard' %}#my-actions">My Actions</a>
+    <a href="{% url 'reviews:list' %}?state=COMPLETED">Reports</a>
+  {% endif %}
+  {% if af_is_business_owner %}
+    <div class="nav-section">Business Owner</div>
+    <a href="{% url 'core:dashboard' %}#acceptances">Pending Risk Acceptances</a>
+    {% if not af_is_requester and not af_is_reviewer %}
+      <a href="{% url 'reviews:list' %}">My Reviews</a>
+      <a href="{% url 'reviews:list' %}?state=COMPLETED">Reports</a>
+    {% endif %}
+  {% endif %}
+  {% if af_is_admin %}
+    <div class="nav-section">Administration</div>
+    <a href="{% url 'afadmin:accounts_user_changelist' %}">User Management</a>
+    <a href="{% url 'afadmin:accounts_department_changelist' %}">Departments</a>
+    <a href="{% url 'administration:assignments' %}" class="{% if 'review-assignments' in p %}active{% endif %}">Review Assignments</a>
+    <a href="{% url 'afadmin:accounts_securitysetting_changelist' %}">Security Settings</a>
+    <a href="{% url 'afadmin:assurance_evidencepolicy_changelist' %}">Evidence Policy</a>
+    <a href="{% url 'afadmin:content_ruleset_changelist' %}">Rule / Catalogue Versions</a>
+    <a href="{% url 'administration:account_events' %}" class="{% if 'account-events' in p %}active{% endif %}">Account Events</a>
+  {% endif %}
+</nav>
+{% endwith %}

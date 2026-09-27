@@ -1,0 +1,4 @@
+Your AssureFlow sign-in code is {{ token }}.
+
+It expires in {{ minutes }} minute{{ minutes|pluralize }} and can be used once.
+If you did not try to sign in, contact Information Security.

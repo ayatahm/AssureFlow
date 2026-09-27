@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}Compliance decision{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<div class="split">
+  <form method="post" class="card accent" novalidate>{% csrf_token %}
+    <div class="eyebrow">Project Compliance Decision</div>
+    <h2>{{ rr.control.code }} · {{ rr.control.title }}</h2>
+    <p>Requirement level (from the generated assessment): {% badge rr.level %} · Conclusion: {% badge conclusion.status %}</p>
+    {% include "components/field.html" with f=form.decision %}
+    {% include "components/field.html" with f=form.note %}
+    <p class="small muted">Exception Granted is Reviewer-only and is not Formal Business Risk Acceptance.</p>
+    <button class="btn btn-primary" type="submit">Record decision</button>
+  </form>
+  <aside>
+    <div class="card"><h3>Source guidance</h3>
+      {% for key, text in guidance.items %}<p class="small"><strong>{{ key|label }}:</strong> {{ text }}</p>{% empty %}<p class="muted small">No guidance loaded for this level.</p>{% endfor %}
+    </div>
+    <div class="card"><h3>History</h3>
+      {% for d in history %}<div class="small">{% badge d.decision d.get_decision_display %} {{ d.decided_by.full_name }} · {{ d.decided_at|date:"j M Y H:i" }}</div>{% empty %}<p class="muted small">None.</p>{% endfor %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

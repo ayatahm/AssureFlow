@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}{{ finding.code }}{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<div class="page-head"><div><div class="eyebrow">Finding {{ finding.code }}</div><h2 style="margin:0">{{ finding.title }}</h2>
+<div class="sub">{% badge finding.priority %} · {% if finding.review_requirement %}Requirement <a href="{% url 'assurance:trace' review.pk finding.review_requirement.pk %}">{{ finding.review_requirement.control.code }}</a>{% else %}Technical item <a href="{% url 'reviews:technical_item' review.pk finding.technical_item.pk %}">{{ finding.technical_item.control.source_id }}</a>{% endif %} · raised by {{ finding.created_by.full_name }}, {{ finding.created_at|date:"j M Y" }}</div></div></div>
+<div class="split">
+  <div>
+    <div class="card"><h3>Description</h3><p class="pre">{{ finding.description }}</p></div>
+    {% for a in actions %}
+    <div class="card">
+      <div class="card-head"><h3><a href="{% url 'assurance:action' a.pk %}">{{ a.code }}</a> · {{ a.owner.full_name }}</h3>{% badge a.state %}</div>
+      <p><strong>Expected outcome:</strong> {{ a.expected_outcome }}</p>
+      <p class="small muted">Due {{ a.due_date|date:"j M Y" }}</p>
+      {% if a.state == "OPEN" %}<p class="small">Alternative treatment for this finding: {% badge treatment treatment_label %}</p>{% endif %}
+    </div>
+    {% empty %}<div class="card empty">No actions yet.</div>{% endfor %}
+  </div>
+  <aside>
+    <div class="card {% if treatment == 'ACCEPTED' %}ok{% elif treatment == 'DECLINED' %}danger{% endif %}">
+      <h3>Treatment</h3>
+      <p>{% badge treatment treatment_label %}</p>
+      {% if treatment_acceptance %}<p class="small">Latest decision: {{ treatment_acceptance.code }} ({{ treatment_acceptance.get_state_display }})</p>{% endif %}
+      <p class="small muted">Accepting or declining risk never closes an action or verifies a control.</p>
+    </div>
+    {% if can_add_action %}
+    <form method="post" class="card" novalidate>{% csrf_token %}
+      <h3>Add action</h3>
+      {% include "components/field.html" with f=form.owner %}
+      {% include "components/field.html" with f=form.due_date %}
+      {% include "components/field.html" with f=form.expected_outcome %}
+      <button class="btn" type="submit">Add action</button>
+    </form>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

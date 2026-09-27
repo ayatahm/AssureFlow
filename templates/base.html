@@ -1,0 +1,39 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}AssureFlow{% endblock %} · AssureFlow</title>
+  <link rel="stylesheet" href="{% static 'css/assureflow.css' %}">
+  <link rel="icon" href="{% static 'icons/shield.svg' %}">
+</head>
+<body>
+{% if af_password_only_banner %}<div class="demo-banner" role="alert">{{ af_password_only_banner }}</div>{% endif %}
+{% block body %}
+<div class="shell">
+  <aside class="sidebar">
+    <a class="brand" href="{% url 'core:dashboard' %}">
+      <span class="brand-mark">AF</span>
+      <span><span class="brand-name">Assure<span>Flow</span></span><br><span class="brand-sub">InfoSec Assurance</span></span>
+    </a>
+    {% include "components/nav.html" %}
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <a class="small" href="{% url 'core:dashboard' %}#help">Help</a>
+      <div class="account">
+        <div class="name">{{ request.user.full_name }}</div>
+        <div class="meta">{{ af_roles|join:", "|default:"No role" }}{% if request.user.department %} · {{ request.user.department }}{% endif %}</div>
+      </div>
+      <a class="btn btn-sm" href="{% url 'accounts:password_change' %}">Password</a>
+      <form method="post" action="{% url 'accounts:logout' %}" class="inline">{% csrf_token %}<button class="btn btn-sm" type="submit">Sign out</button></form>
+    </header>
+    <main class="content">
+      {% if messages %}<ul class="messages">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>{% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}
+</body>
+</html>

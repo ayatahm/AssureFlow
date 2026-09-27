@@ -1,0 +1,20 @@
+{% load af %}
+<div class="table-wrap"><table>
+  <thead><tr><th>Reference</th><th>Title</th><th>Request Type</th><th>Department</th><th>Status</th><th>Target Date</th><th>Last Updated</th><th></th></tr></thead>
+  <tbody>
+  {% for r in reviews %}
+    <tr>
+      <td class="mono nowrap">{{ r.reference }}</td>
+      <td>{{ r.title }}</td>
+      <td>{{ r.get_request_type_display }}</td>
+      <td>{{ r.department }}</td>
+      <td>{% badge r.state %}{% if r.state == "COMPLETED" %} {% badge r.outcome %}{% endif %}</td>
+      <td class="nowrap">{{ r.target_date|date:"j M Y"|default:"—" }}</td>
+      <td class="nowrap">{{ r.updated_at|date:"j M Y H:i" }}</td>
+      <td><a class="btn btn-sm" href="{% url 'reviews:detail' r.pk %}">Open</a></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="8" class="empty">No reviews yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>

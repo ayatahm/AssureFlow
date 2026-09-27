@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Security Reviews{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="eyebrow">Security Reviews</div><h1>Reviews</h1><div class="sub">Only reviews you are assigned to are shown.</div></div>
+  {% if can_create %}<a class="btn btn-brand" href="{% url 'reviews:new' %}">+ New Security Review</a>{% endif %}
+</div>
+<div class="filters">
+  <a href="{% url 'reviews:list' %}" class="{% if not state %}active{% endif %}">All</a>
+  {% for value, label in states %}<a href="?state={{ value }}" class="{% if state == value %}active{% endif %}">{{ label }}</a>{% endfor %}
+</div>
+<div class="card">{% include "reviews/_table.html" with reviews=reviews %}</div>
+{% endblock %}

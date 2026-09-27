@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="login">
+  <section class="login-brand">
+    <div>
+      <div class="brand"><span class="brand-mark">AF</span></div>
+    </div>
+    <div style="position:relative;z-index:1">
+      <h1>Assure<span>Flow</span></h1>
+      <div class="tag">Information Security Assessment &amp; Assurance Platform</div>
+    </div>
+    <div class="motto" style="position:relative;z-index:1">Assess. Assure. Manage Risk.</div>
+  </section>
+  <section class="login-panel">
+    <div class="login-card">
+      {% if messages %}<ul class="messages">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>{% endif %}
+      {% block card %}{% endblock %}
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}{{ action.code }}{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<div class="page-head"><div><div class="eyebrow">Remediation action {{ action.code }}</div>
+<h2 style="margin:0">{{ finding.title }}</h2>
+<div class="sub">{% badge action.state %} · Owner {{ action.owner.full_name }} · due {{ action.due_date|date:"j M Y" }} · finding <a href="{% url 'assurance:finding' review.pk finding.pk %}">{{ finding.code }}</a></div></div></div>
+<div class="split">
+  <div>
+    <div class="card"><h3>Expected outcome</h3><p class="pre">{{ action.expected_outcome }}</p>
+      {% if action.submission_note %}<h3>Latest submission</h3><p class="pre">{{ action.submission_note }}</p><p class="small muted">{{ action.submitted_by.full_name }} · {{ action.submitted_at|date:"j M Y H:i" }}</p>{% endif %}
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Remediation evidence</h3>{% if can_upload %}<a class="btn btn-sm" href="{% url 'assurance:evidence_upload' review.pk %}?target=action:{{ action.pk }}&next={% url 'assurance:action' action.pk %}">+ Upload evidence</a>{% endif %}</div>
+      {% include "assurance/_evidence_table.html" with links=evidence %}
+    </div>
+    <div class="card">
+      <h3>Timeline</h3>
+      {% for h in history %}<div class="small" style="padding:6px 0;border-bottom:1px solid #EEF1F6"><strong>{{ h.get_kind_display }}</strong> · {{ h.actor.full_name }} · {{ h.at|date:"j M Y H:i" }}{% if h.note %}<div class="muted pre">{{ h.note }}</div>{% endif %}{% if h.evidence_link_ids %}<div class="muted">Evidence links: {{ h.evidence_link_ids|join:", " }}</div>{% endif %}</div>{% endfor %}
+    </div>
+  </div>
+  <aside>
+    {% if can_submit %}
+    <form method="post" action="{% url 'assurance:action_submit' action.pk %}" class="card accent" novalidate>{% csrf_token %}
+      <h3>Submit remediation</h3>
+      {% include "components/field.html" with f=submit_form.note %}
+      {% include "components/field.html" with f=submit_form.evidence_links %}
+      <button class="btn btn-primary" type="submit">Submit for verification</button>
+    </form>
+    {% endif %}
+    {% if can_close %}
+    <form method="post" action="{% url 'assurance:action_close' action.pk %}" class="card accent" novalidate>{% csrf_token %}
+      <h3>Verify remediation</h3>
+      {% include "components/field.html" with f=note_form.note %}
+      <div class="actions"><button class="btn btn-primary" name="decision" value="close" type="submit">Verify &amp; close</button>
+      <button class="btn btn-danger" name="decision" value="return" type="submit">Return (reason required)</button></div>
+      <p class="small muted" style="margin-top:8px">Closing the action does not verify the control. Record the conclusion on the requirement separately.</p>
+    </form>
+    {% endif %}
+    {% if can_reopen %}
+    <form method="post" action="{% url 'assurance:action_reopen' action.pk %}" class="card" novalidate>{% csrf_token %}
+      <h3>Reopen action</h3>
+      {% include "components/field.html" with f=note_form.note %}
+      <button class="btn btn-danger" type="submit">Reopen</button>
+    </form>
+    {% endif %}
+    {% if action.state == "SUBMITTED" and not can_close and is_reviewer %}<div class="card notice">You submitted or own this action, so another Reviewer must verify it.</div>{% endif %}
+  </aside>
+</div>
+{% endblock %}

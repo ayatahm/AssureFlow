@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}Assurance Trace · {{ t.rr.control.code }}{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<div class="page-head">
+  <div><div class="eyebrow">Assurance Trace</div><h2 style="margin:0">{{ t.rr.control.code }} · {{ t.rr.control.title }}</h2>
+  <div class="sub">From selection to issued report, built from recorded evidence and decisions.{% if not t.full %} Participant view.{% endif %}</div></div>
+  {% if is_reviewer %}<a class="btn" href="{% url 'reviews:requirement' review.pk t.rr.pk %}">Open in workbench</a>{% endif %}
+</div>
+<div class="trace">
+  <div class="trace-step"><span class="dot">1</span><div class="card">
+    <h3>Why selected</h3>
+    <div class="kv">
+      <span class="k">Applicability</span><span>{% badge t.rr.applicability %}</span>
+      <span class="k">Requirement level</span><span>{% badge t.rr.level %}</span>
+      <span class="k">Rule version</span><span class="mono">{{ review.rule_set.version }}</span>
+      <span class="k">Explanation</span><span>{{ t.rr.reason }}</span>
+      {% if t.framework_refs %}<span class="k">Framework refs</span><span>{% for f in t.framework_refs %}{{ f.framework }} {{ f.reference }} <span class="muted">(edition: {{ f.edition }})</span>{% if not forloop.last %}; {% endif %}{% endfor %}</span>{% endif %}
+    </div>
+  </div></div>
+
+  <div class="trace-step"><span class="dot">2</span><div class="card">
+    <h3>Requester response</h3>
+    {% for q in t.questions %}
+      <div style="padding:6px 0;border-bottom:1px solid #EEF1F6">
+        <div>{{ q.question.text }}</div>
+        <div class="kv small" style="margin-top:4px">
+          <span class="k">Answer</span><span>{% badge q.answer %}{% if q.comment %} “{{ q.comment }}”{% endif %}</span>
+          <span class="k">Entered by</span><span>{{ q.answered_by.full_name|default:"—" }}{% if q.on_behalf %} <span class="badge badge-blue">on behalf of Requester</span>{% endif %}</span>
+          <span class="k">When</span><span>{{ q.answered_at|date:"j M Y H:i"|default:"—" }}</span>
+        </div>
+      </div>
+    {% empty %}<p class="muted">No question presented{% if t.rr.is_applicable %} (applicable but not asked — an Optional control or one without a linked question){% endif %}.</p>{% endfor %}
+    {% for f in t.flags %}<div class="small" style="margin-top:6px">Review flag: {% badge f.kind %} {% if f.resolved_at %}<span class="muted">resolved {{ f.resolved_at|date:"j M Y" }}</span>{% endif %}</div>{% endfor %}
+  </div></div>
+
+  <div class="trace-step"><span class="dot">3</span><div class="card">
+    <h3>Evidence</h3>
+    {% include "assurance/_evidence_table.html" with links=t.evidence %}
+  </div></div>
+
+  <div class="trace-step"><span class="dot">4</span><div class="card">
+    <h3>Reviewer conclusion</h3>
+    {% if t.conclusion %}
+      <div class="kv"><span class="k">Status</span><span>{% badge t.conclusion.status %}</span><span class="k">Notes</span><span class="pre">{{ t.conclusion.notes|default:"—" }}</span>
+      <span class="k">Reviewer</span><span>{{ t.conclusion.decided_by.full_name }}</span><span class="k">Date</span><span>{{ t.conclusion.decided_at|date:"j M Y H:i" }}</span></div>
+    {% elif t.conclusion_stale %}<div class="notice">A linked answer changed after the last conclusion ({{ t.stale_conclusion.get_status_display }}, {{ t.stale_conclusion.decided_at|date:"j M Y" }}). It is history only; re-review is required.</div>
+    {% else %}<p class="muted">No conclusion recorded yet.</p>{% endif %}
+    {% if t.conclusion_history|length > 1 %}<details class="drawer small"><summary>Conclusion history</summary>{% for c in t.conclusion_history %}<div>{% badge c.status %} {{ c.decided_by.full_name }} · {{ c.decided_at|date:"j M Y H:i" }}</div>{% endfor %}</details>{% endif %}
+  </div></div>
+
+  <div class="trace-step"><span class="dot">5</span><div class="card">
+    <h3>Treatment</h3>
+    {% for fx in t.findings %}
+      <div style="padding:6px 0;border-bottom:1px solid #EEF1F6">
+        <strong>{{ fx.finding.code }}</strong> {{ fx.finding.title }} {% badge fx.finding.priority %}
+        {% for ax in fx.actions %}
+          <div class="small" style="margin:4px 0 0 12px">Action <a href="{% url 'assurance:action' ax.action.pk %}">{{ ax.action.code }}</a> {% badge ax.action.state %} · owner {{ ax.action.owner.full_name }}
+            {% for h in ax.history %}<div class="muted">{{ h.get_kind_display }} · {{ h.actor.full_name }} · {{ h.at|date:"j M Y" }}{% if h.note %} — {{ h.note }}{% endif %}</div>{% endfor %}
+            {% if ax.evidence %}<div>Remediation evidence: {% for l in ax.evidence %}<a href="{% url 'assurance:evidence_download' l.evidence.pk %}">{{ l.evidence.original_name }}</a> <span class="hash">{{ l.evidence.sha256|short_hash }}</span>{% if not forloop.last %}, {% endif %}{% endfor %}</div>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% empty %}<p class="muted small">No findings raised.</p>{% endfor %}
+    <div class="kv" style="margin-top:8px">
+      <span class="k">Compliance decision</span><span>{% if t.compliance %}{% badge t.compliance.decision t.compliance.get_decision_display %} <span class="small muted">{{ t.compliance.note }}</span>{% else %}—{% endif %}</span>
+      <span class="k">Risk acceptance</span><span>{% for a in t.acceptances %}<a href="{% url 'assurance:decide' a.pk %}">{{ a.code }}</a> {% badge a.state %}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</span>
+      {% if t.conclusion.status == "SECURITY_GAP" or t.acceptances %}<span class="k">Current treatment</span><span>{% badge t.treatment_status t.treatment_label %}</span>{% endif %}
+      {% if t.risk %}<span class="k">Risk record</span><span>R-{{ t.risk.pk }} residual {% badge t.risk.residual %}{% if t.risk_pinned %} <span class="badge badge-slate">pinned at completion</span>{% endif %}</span>{% endif %}
+    </div>
+    {% if t.compliance_history|length > 1 %}<details class="drawer small"><summary>Compliance history</summary>{% for d in t.compliance_history %}<div>{{ d.get_decision_display }} · {{ d.decided_by.full_name }} · {{ d.decided_at|date:"j M Y" }}</div>{% endfor %}</details>{% endif %}
+  </div></div>
+
+  <div class="trace-step final"><span class="dot">6</span><div class="card">
+    <h3>Final outcome</h3>
+    {% if t.report_entry %}
+      <p>In issued report revision {{ t.snapshot.revision }} (<span class="hash">{{ t.snapshot.sha256|short_hash }}</span>):
+      {% if t.report_entry.conclusion %}{% badge t.report_entry.conclusion.status %}{% else %}{% badge t.report_entry.applicability %}{% endif %}
+      {% if t.report_entry.treatment %} · treatment {% badge t.report_entry.treatment.status %}{% endif %}</p>
+      <p class="small muted">Review outcome: {% badge review.outcome %}</p>
+    {% else %}<p class="muted">Not yet issued. The report is frozen when the Reviewer completes the review.</p>{% endif %}
+  </div></div>
+</div>
+{% endblock %}

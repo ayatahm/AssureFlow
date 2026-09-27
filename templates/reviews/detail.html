@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}{{ review.reference }}{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+
+{% if review.state == "WITHDRAWN" %}<div class="notice danger">Withdrawn {{ review.withdrawn_at|date:"j M Y" }}: {{ review.withdrawn_reason }}</div>{% endif %}
+
+<div class="card">
+  <div class="card-head"><h3>Next steps</h3></div>
+  <div class="actions">
+    {% if perm.review_edit_intake %}<a class="btn" href="{% url 'reviews:intake' review.pk %}">Edit intake</a>{% endif %}
+    {% if perm.review_triage %}<a class="btn btn-primary" href="{% url 'reviews:triage' review.pk %}">Complete triage</a>{% endif %}
+    {% if perm.review_answer %}<a class="btn btn-primary" href="{% url 'reviews:assessment' review.pk %}">Answer assessment ({{ answered }}/{{ total_questions }})</a>{% endif %}
+    {% if perm.review_submit %}<form method="post" action="{% url 'reviews:submit' review.pk %}" class="inline">{% csrf_token %}<button class="btn btn-brand" {% if answered < total_questions %}disabled title="Answer every question first"{% endif %}>Submit for InfoSec review</button></form>{% endif %}
+    {% if perm.review_return_to_draft %}<a class="btn btn-danger" href="{% url 'reviews:return_to_draft' review.pk %}">Return to Draft</a>{% endif %}
+    {% if perm.review_workbench and review.state == "IN_REVIEW" %}<a class="btn btn-primary" href="{% url 'reviews:workbench' review.pk %}">Open workbench</a>{% endif %}
+    {% if perm.review_return_to_requester %}<a class="btn" href="{% url 'reviews:return_to_requester' review.pk %}">Return to Requester</a>{% endif %}
+    {% if perm.review_complete %}<a class="btn btn-navy" href="{% url 'assurance:complete' review.pk %}">Final review &amp; completion</a>{% endif %}
+    {% if review.state == "AWAITING_ACCEPTANCE" %}<span class="muted">Waiting for the Business Owner's decision.</span>{% endif %}
+    {% if review.state == "COMPLETED" %}<a class="btn btn-primary" href="{% url 'reporting:report' review.pk %}">View issued report</a>{% endif %}
+  </div>
+</div>
+
+{% if summary %}
+<div class="card accent">
+  <div class="card-head"><h3>Assessment Scope Summary</h3><span class="small muted">Generated live from the pinned rule set {{ review.rule_set.version }}</span></div>
+  <div class="grid grid-8">
+    {% with base="reviews:workbench" %}
+    <a class="metric" {% if perm.review_workbench %}href="{% url 'reviews:workbench' review.pk %}"{% endif %}><div class="label">Requirements evaluated</div><div class="value">{{ summary.evaluated }}</div></a>
+    <a class="metric" {% if perm.review_workbench %}href="{% url 'reviews:workbench' review.pk %}?filter=asked"{% endif %}><div class="label">Applicable</div><div class="value">{{ summary.applicable }}</div></a>
+    <a class="metric" {% if perm.review_workbench %}href="{% url 'reviews:workbench' review.pk %}?filter=skipped"{% endif %}><div class="label">Not applicable</div><div class="value">{{ summary.not_applicable }}</div></a>
+    <a class="metric" {% if perm.review_workbench %}href="{% url 'reviews:workbench' review.pk %}?level=REQUIRED"{% endif %}><div class="label">Required</div><div class="value">{{ summary.required }}</div></a>
+    <a class="metric" {% if perm.review_workbench %}href="{% url 'reviews:workbench' review.pk %}?level=RECOMMENDED"{% endif %}><div class="label">Recommended</div><div class="value">{{ summary.recommended }}</div></a>
+    <a class="metric" {% if perm.review_workbench %}href="{% url 'reviews:workbench' review.pk %}?level=OPTIONAL"{% endif %}><div class="label">Optional</div><div class="value">{{ summary.optional }}</div></a>
+    <a class="metric" href="{% url 'reviews:assessment' review.pk %}"><div class="label">Questions asked</div><div class="value">{{ summary.questions_asked }}</div></a>
+    <div class="metric"><div class="label">Questions removed</div><div class="value">{{ summary.questions_removed }}</div></div>
+    {% endwith %}
+  </div>
+</div>
+{% endif %}
+
+<div class="grid grid-3">
+  <div class="card">
+    <h3>Progress</h3>
+    {% if total_questions %}<p><strong>{{ answered }}</strong> of {{ total_questions }} questions answered</p>{% else %}<p class="muted">Assessment not generated yet.</p>{% endif %}
+    <p class="small muted">Open findings: {{ open_findings }}</p>
+  </div>
+  <div class="card">
+    <h3>Residual risk</h3>
+    {% if latest_risk %}<p>{% badge latest_risk.residual %} <span class="small muted">inherent {{ latest_risk.get_inherent_display }}</span></p>
+    <p class="small muted">Reviewer judgement by {{ latest_risk.assessed_by.full_name }}, {{ latest_risk.assessed_at|date:"j M Y" }}{% if review.final_risk_record_id %} · pinned at completion{% endif %}</p>
+    {% else %}<p class="muted">Not yet recorded by the Reviewer.</p>{% endif %}
+  </div>
+  <div class="card">
+    <h3>Classification &amp; routing</h3>
+    {% if review.classification %}<p>{% badge review.classification %}</p><p class="small muted">{{ review.classification_reason }}</p>
+    {% for label in routing_on %}<span class="badge badge-gold">{{ label }}</span> {% endfor %}
+    {% else %}<p class="muted">Calculated when the assessment is generated.</p>{% endif %}
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h3>Project details</h3>
+    <dl class="facts">
+      <dt>Purpose</dt><dd class="pre">{{ review.purpose }}</dd>
+      <dt>Goals</dt><dd class="pre">{{ review.goals }}</dd>
+      <dt>Project owner</dt><dd>{{ review.project_owner }}</dd>
+      <dt>External reference</dt><dd>{{ review.external_ref|default:"—" }}</dd>
+      <dt>Raised by</dt><dd>{{ review.created_by.full_name }}{% if review.on_behalf %} <span class="badge badge-blue">on behalf of department</span>{% endif %}</dd>
+      <dt>Created</dt><dd>{{ review.created_at|date:"j M Y H:i" }}</dd>
+    </dl>
+  </div>
+  <div class="card">
+    <h3>Versions &amp; scope</h3>
+    <dl class="facts">
+      <dt>Rule baseline</dt><dd>{{ review.rule_set.version|default:"Pinned at generation" }}</dd>
+      <dt>Technical catalogue</dt><dd>{{ review.technical_catalogue.version|default:"Pinned at generation" }}</dd>
+      <dt>Technical scope</dt><dd>{% for t in scope_tags %}<span class="badge {% if t.removed_at_confirmation %}badge-muted{% else %}badge-navy{% endif %}">{{ t.scope_tag.label }}</span> {% empty %}<span class="muted">None proposed</span>{% endfor %}</dd>
+      <dt>Scope confirmed</dt><dd>{% if review.scope_confirmed_at %}{{ review.scope_confirmed_by.full_name }}, {{ review.scope_confirmed_at|date:"j M Y" }}{% else %}<span class="muted">Not yet</span>{% endif %}</dd>
+      {% if snapshot %}<dt>Report</dt><dd>Revision {{ snapshot.revision }} · <span class="hash">{{ snapshot.sha256|short_hash }}</span></dd>{% endif %}
+    </dl>
+  </div>
+</div>
+{% endblock %}

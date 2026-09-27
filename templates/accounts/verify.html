@@ -1,0 +1,17 @@
+{% extends "accounts/auth_base.html" %}
+{% block title %}Verify your sign-in{% endblock %}
+{% block card %}
+<div class="card" style="padding:28px">
+  <h2>Verify your sign-in</h2>
+  <p class="muted">We sent a 6-digit code to <strong>{{ masked_email }}</strong>. It expires in {{ minutes }} minute{{ minutes|pluralize }} and can be used once.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "components/field.html" with f=form.code %}
+    <button class="btn btn-brand" type="submit" style="width:100%;justify-content:center">Verify</button>
+  </form>
+  <div class="actions" style="margin-top:14px;justify-content:space-between">
+    <form method="post" action="{% url 'accounts:resend' %}">{% csrf_token %}<button class="btn-link" type="submit">Resend code</button></form>
+    <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="btn-link" type="submit">Cancel</button></form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}Review Assignments{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="eyebrow">Administration</div><h1>Review Assignments</h1>
+<div class="sub">Metadata only. Assessment content is not available to administrators.</div></div></div>
+<div class="split">
+  <div class="card" style="padding:0">
+    <table><thead><tr><th>Reference</th><th>Title</th><th>Department</th><th>State</th><th>Participants</th></tr></thead><tbody>
+    {% for r in rows %}
+      <tr><td class="mono">{{ r.reference }}</td><td>{{ r.title }}</td><td>{{ r.department }}</td><td>{% badge r.state %}</td>
+      <td>{% for p in r.participants %}<form method="post" class="inline">{% csrf_token %}<span class="badge badge-navy">{{ p.role }}: {{ p.name }}</span><button class="btn-link small" name="remove" value="{{ p.id }}" title="Remove">×</button></form> {% endfor %}</td></tr>
+    {% empty %}<tr><td colspan="5" class="empty">No reviews.</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+  <form method="post" class="card accent" novalidate>{% csrf_token %}
+    <h3>Assign participant</h3>
+    {% include "components/field.html" with f=form.review %}
+    {% include "components/field.html" with f=form.user %}
+    {% include "components/field.html" with f=form.role %}
+    <button class="btn btn-primary" type="submit">Assign</button>
+    <p class="small muted" style="margin-top:8px">The user must hold the matching application role. Administrators cannot assign themselves, and Admin accounts cannot be participants.</p>
+  </form>
+</div>
+{% endblock %}

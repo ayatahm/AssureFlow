@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}Triage · {{ review.reference }}{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+{% include "reviews/_steps.html" %}
+<div class="split">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="card accent">
+      <div class="card-head"><h2>Triage</h2><span class="small muted">Rule set {{ rule_set.version|default:"not loaded" }}</span></div>
+      {% if not editable %}<div class="notice info">Triage is locked. It can only be changed while the review is in Draft.</div>{% endif %}
+      <div class="grid grid-2">
+        {% for f in level_fields %}{% include "components/field.html" with f=f %}{% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <h3>Context questions</h3>
+      <p class="small muted">Answer every question. Nothing is pre-selected.</p>
+      {% for f in yes_no_fields %}
+        <div class="question {% if f.value %}answered{% endif %}">
+          <div class="qcode">{{ f.name }}</div>
+          <div class="qtext">{{ f.label }}</div>
+          {% if f.help_text %}<div class="small muted" style="margin:-6px 0 8px">{{ f.help_text }}</div>{% endif %}
+          <div class="field" style="margin:0">{{ f }}{{ f.errors }}</div>
+        </div>
+      {% endfor %}
+    </div>
+    {% if editable %}<div class="actions"><button class="btn btn-primary" type="submit">Save triage answers</button></div>{% endif %}
+  </form>
+
+  <aside>
+    <div class="card">
+      <h3>Classification preview</h3>
+      {% if preview %}
+        <p>{% badge preview.classification %}</p>
+        <p class="small muted">{{ preview.reason }}</p>
+        <h3 style="margin-top:12px">Routing indicators</h3>
+        {% for code, on in preview.routing.items %}
+          <div class="actions small" style="justify-content:space-between;padding:3px 0"><span>{{ routing_labels|get_item:code|default:code }}</span>{% if on %}<span class="badge badge-gold">Yes</span>{% else %}<span class="badge badge-grey">No</span>{% endif %}</div>
+        {% endfor %}
+      {% else %}
+        <p class="muted small">Shown once every triage question is answered and saved. Calculated values cannot be edited.</p>
+      {% endif %}
+    </div>
+    {% if perm.review_generate %}
+    <div class="card">
+      <h3>Generate assessment</h3>
+      {% if problems %}
+        <ul class="small" style="padding-left:18px;color:var(--af-warning)">{% for p in problems %}<li>{{ p }}</li>{% endfor %}</ul>
+      {% else %}
+        <details>
+          <summary class="btn btn-brand">Generate Assessment</summary>
+          <div class="notice" style="margin-top:10px">Generation pins the rule and technical-catalogue versions and locks triage until the review is returned to Draft.</div>
+          <form method="post" action="{% url 'reviews:generate' review.pk %}">{% csrf_token %}<button class="btn btn-brand" type="submit">Confirm and generate</button></form>
+        </details>
+      {% endif %}
+    </div>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "accounts/auth_base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block card %}
+<div class="card" style="padding:28px">
+  <h2>Sign in</h2>
+  <p class="muted">Use your registered email or employee ID.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="notice danger">{{ form.non_field_errors.0 }}</div>{% endif %}
+    {% include "components/field.html" with f=form.identifier %}
+    {% include "components/field.html" with f=form.password %}
+    <button class="btn btn-brand" type="submit" style="width:100%;justify-content:center">Sign In</button>
+  </form>
+  <p class="small muted" style="margin-top:14px">After your password, a one-time code is sent to your registered email. Accounts are created by the AssureFlow administrator.</p>
+</div>
+{% endblock %}

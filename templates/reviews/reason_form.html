@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<div class="card {% if danger %}danger{% else %}accent{% endif %}" style="max-width:760px">
+  <h2>{{ title }}</h2>
+  <p>{{ warning }}</p>
+  {% if blockers %}<div class="notice danger"><strong>This reset is not allowed:</strong><ul>{% for b in blockers %}<li>{{ b }}</li>{% endfor %}</ul></div>{% endif %}
+  <form method="post" novalidate>{% csrf_token %}
+    {% include "components/field.html" with f=form.reason %}
+    <div class="actions"><button class="btn {% if danger %}btn-danger{% else %}btn-primary{% endif %}" type="submit">{{ button }}</button>
+    <a class="btn" href="{% url 'reviews:detail' review.pk %}">Cancel</a></div>
+  </form>
+</div>
+{% endblock %}

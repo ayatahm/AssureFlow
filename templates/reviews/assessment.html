@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}Assessment · {{ review.reference }}{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+{% include "reviews/_steps.html" %}
+<div class="split" style="grid-template-columns: 260px minmax(0,1fr)">
+  <aside class="card section-nav" style="position:sticky;top:12px">
+    <h3>Sections</h3>
+    {% for name, items in sections %}<a href="#s-{{ forloop.counter }}"><span>{{ name }}</span><span class="muted small">{{ items|length }}</span></a>{% endfor %}
+    <hr style="border:0;border-top:1px solid var(--af-border)">
+    <p class="small"><strong>{{ answered }}</strong> of {{ total }} answered</p>
+    {% if perm.review_submit %}
+      <form method="post" action="{% url 'reviews:submit' review.pk %}">{% csrf_token %}<button class="btn btn-brand" style="width:100%;justify-content:center" {% if answered < total %}disabled{% endif %}>Submit for review</button></form>
+    {% endif %}
+  </aside>
+  <div>
+    {% if not editable %}<div class="notice info">Answers are locked in the current state ({{ review.get_state_display }}).</div>{% endif %}
+    {% for name, items in sections %}
+      <h2 id="s-{{ forloop.counter }}" style="margin-top:8px">{{ name }}</h2>
+      {% for rq in items %}
+        <div class="question {% if rq.answer %}answered{% endif %}" id="q-{{ rq.pk }}">
+          <div class="actions" style="justify-content:space-between">
+            <span class="qcode">{{ rq.question.code }}</span>
+            <a class="small" href="{% url 'reviews:why' review.pk rq.pk %}">Why am I being asked this?</a>
+          </div>
+          <div class="qtext">{{ rq.question.text }}</div>
+          {% if editable %}
+            <form method="post">{% csrf_token %}
+              <input type="hidden" name="question" value="{{ rq.pk }}">
+              <div class="choices" style="margin-bottom:8px">
+                {% for value, label in answer_choices %}<label class="choice"><input type="radio" name="answer" value="{{ value }}" {% if rq.answer == value %}checked{% endif %}> {{ label }}</label>{% endfor %}
+              </div>
+              <textarea name="comment" rows="2" placeholder="Optional comment">{{ rq.comment }}</textarea>
+              <div class="actions" style="margin-top:8px">
+                <button class="btn btn-sm btn-primary" type="submit">Save answer</button>
+                {% for rr in rq.linked_requirements %}<a class="btn btn-sm" href="{% url 'assurance:evidence_upload' review.pk %}?target=requirement:{{ rr.pk }}&next={{ request.path|urlencode }}%23q-{{ rq.pk }}">+ Evidence for {{ rr.control.code }}</a>{% endfor %}
+              </div>
+            </form>
+          {% else %}
+            <p>{% badge rq.answer %}{% if rq.comment %} <span class="small muted">— {{ rq.comment }}</span>{% endif %}</p>
+          {% endif %}
+          {% if rq.answered_by %}<div class="small muted" style="margin-top:6px">Answered by {{ rq.answered_by.full_name }}{% if rq.on_behalf %} on behalf of the Requester{% endif %}, {{ rq.answered_at|date:"j M Y H:i" }}</div>{% endif %}
+          {% if rq.evidence %}<div class="small" style="margin-top:6px">Evidence: {% for link in rq.evidence %}<a href="{% url 'assurance:evidence_download' link.evidence.pk %}">{{ link.evidence.original_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</div>{% endif %}
+        </div>
+      {% endfor %}
+    {% empty %}
+      <div class="card empty">No questions were selected for this review.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}Upload evidence{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<div class="split">
+  <div class="card accent">
+    <div class="eyebrow">Evidence for</div>
+    <h2>{{ target_label }}</h2>
+    <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+      <input type="hidden" name="target" value="{{ target_raw }}">
+      <input type="hidden" name="next" value="{{ next }}">
+      {% include "components/field.html" with f=form.file %}
+      <p class="small muted">Allowed: {% for t in policy.allowed_types %}{{ t|cut:"application/"|cut:"image/"|upper }}{% if not forloop.last %}, {% endif %}{% endfor %} · maximum {{ policy.max_bytes|filesize }}. The file's actual content is checked, not its extension.</p>
+      {% include "components/field.html" with f=form.comment %}
+      <button class="btn btn-primary" type="submit">Upload</button>
+      {% if next %}<a class="btn" href="{{ next }}">Back</a>{% endif %}
+    </form>
+  </div>
+  <div class="card">
+    <h3>Existing uploads</h3>
+    {% include "assurance/_evidence_table.html" with links=existing %}
+    <p class="small muted" style="margin-top:8px">Uploading evidence never verifies a control. A Reviewer records the conclusion.</p>
+  </div>
+</div>
+{% endblock %}

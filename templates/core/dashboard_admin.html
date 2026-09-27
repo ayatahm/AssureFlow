@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Administration{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="eyebrow">Administration</div><h1>{{ greeting }}, {{ request.user.first_name }}</h1>
+<div class="sub">Accounts, participants and configuration. Administrators have no access to assessment content.</div></div></div>
+<div class="grid grid-3">
+  <a class="card" href="{% url 'afadmin:accounts_user_changelist' %}"><h3>User Management</h3><p class="muted small">Create, disable and reset accounts; assign application roles.</p></a>
+  <a class="card" href="{% url 'administration:assignments' %}"><h3>Review Assignments</h3><p class="muted small">Metadata-only participant administration.</p></a>
+  <a class="card" href="{% url 'afadmin:accounts_securitysetting_changelist' %}"><h3>Security Settings</h3><p class="muted small">Code lifetime, lockout and session limits.</p></a>
+  <a class="card" href="{% url 'afadmin:assurance_evidencepolicy_changelist' %}"><h3>Evidence Policy</h3><p class="muted small">Allowed file types and maximum size.</p></a>
+  <a class="card" href="{% url 'afadmin:content_ruleset_changelist' %}"><h3>Rule / Catalogue Versions</h3><p class="muted small">Read-only version metadata.</p></a>
+  <a class="card" href="{% url 'administration:account_events' %}"><h3>Account Events</h3><p class="muted small">Account and assignment audit summaries.</p></a>
+</div>
+{% endblock %}

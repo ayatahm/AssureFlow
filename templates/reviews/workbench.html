@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}Workbench · {{ review.reference }}{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<div class="page-head" style="margin-bottom:10px">
+  <div><h2 style="margin:0">Reviewer Workbench</h2><div class="sub small">{{ summary.applicable }} applicable of {{ summary.evaluated }} evaluated · {{ summary.questions_asked }} questions asked</div></div>
+  <div class="actions">
+    <a class="btn" href="{% url 'reviews:technical' review.pk %}">Technical Scope / Testing Guidance</a>
+    {% if perm.review_complete %}<a class="btn btn-navy" href="{% url 'assurance:complete' review.pk %}">Completion checklist</a>{% endif %}
+  </div>
+</div>
+<div class="filters">
+  {% for value, label in filters %}<a href="?filter={{ value }}{% if level %}&level={{ level }}{% endif %}" class="{% if selected == value %}active{% endif %}">{{ label }}</a>{% endfor %}
+  <span class="muted small" style="margin:0 6px">Level:</span>
+  <a href="?filter={{ selected }}" class="{% if not level %}active{% endif %}">Any</a>
+  <a href="?filter={{ selected }}&level=REQUIRED" class="{% if level == 'REQUIRED' %}active{% endif %}">Required</a>
+  <a href="?filter={{ selected }}&level=RECOMMENDED" class="{% if level == 'RECOMMENDED' %}active{% endif %}">Recommended</a>
+  <a href="?filter={{ selected }}&level=OPTIONAL" class="{% if level == 'OPTIONAL' %}active{% endif %}">Optional</a>
+</div>
+<div class="card" style="padding:0">
+<div class="table-wrap"><table>
+  <thead><tr><th>Control</th><th>Title</th><th>Applicability</th><th>Level</th><th>Requester answer</th><th>Flag</th><th>Evidence</th><th>Conclusion</th><th>Action</th></tr></thead>
+  <tbody>
+  {% for row in rows %}{% with rr=row.rr %}
+    <tr class="{% if not rr.is_applicable %}skipped{% endif %}">
+      <td class="mono nowrap">{{ rr.control.code }}</td>
+      <td>{{ rr.control.title }}
+        <details class="drawer small"><summary>Details</summary>
+          <p><strong>Why:</strong> {{ rr.reason }}</p>
+          {% if rr.control.framework_refs.all %}<p><strong>Framework references:</strong> {% for f in rr.control.framework_refs.all %}{{ f.framework }} {{ f.reference }} ({{ f.edition }}){% if not forloop.last %}; {% endif %}{% endfor %}</p>{% endif %}
+          {% for q in row.questions %}<p><strong>{{ q.question.code }}:</strong> {{ q.question.text }}{% if q.comment %}<br><em>“{{ q.comment }}”</em>{% endif %}</p>{% endfor %}
+          <a href="{% url 'assurance:trace' review.pk rr.pk %}">View Assurance Trace →</a>
+        </details>
+      </td>
+      <td>{% badge rr.applicability %}</td>
+      <td>{% badge rr.level %}</td>
+      <td>{% for q in row.questions %}{% badge q.answer %} {% empty %}<span class="muted small">{% if rr.is_applicable %}Not asked{% else %}—{% endif %}</span>{% endfor %}</td>
+      <td>{% for f in row.flags %}{% badge f.kind %} {% empty %}<span class="muted">—</span>{% endfor %}</td>
+      <td>{{ row.evidence_count }}</td>
+      <td>{% if row.conclusion %}{% badge row.conclusion.status %}{% elif row.stale %}<span class="badge badge-amber">Re-review</span>{% elif rr.is_applicable %}<span class="badge badge-muted">Unreviewed</span>{% else %}—{% endif %}</td>
+      <td class="nowrap">{% if rr.is_applicable %}<a class="btn btn-sm btn-primary" href="{% url 'reviews:requirement' review.pk rr.pk %}">Review</a>{% endif %}
+        <a class="btn btn-sm" href="{% url 'assurance:trace' review.pk rr.pk %}">Trace</a></td>
+    </tr>
+  {% endwith %}{% empty %}
+    <tr><td colspan="9" class="empty">No requirements match this filter.</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+</div>
+{% endblock %}

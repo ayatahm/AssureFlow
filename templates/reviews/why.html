@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}Why this question{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<div class="card accent" style="max-width:860px">
+  <div class="eyebrow">Why am I being asked this?</div>
+  <h2>{{ explanation.question.text }}</h2>
+  <p class="muted">{{ explanation.selection_reason }}</p>
+  {% if explanation.always_ask %}<p class="notice info">This question is asked in every assessment.</p>{% endif %}
+  {% if explanation.requirements %}
+  <h3 style="margin-top:14px">Linked security requirements</h3>
+  <table><thead><tr><th>Control</th><th>Title</th><th>Level</th><th>Why it applies</th></tr></thead><tbody>
+  {% for r in explanation.requirements %}<tr><td class="mono">{{ r.code }}</td><td>{{ r.title }}</td><td>{{ r.level }}</td><td class="small">{{ r.reason }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% endif %}
+  <p class="small muted" style="margin-top:12px">Selected by rule baseline {{ explanation.rule_version }}. Answering No or Unsure only flags the item for the Reviewer; it never records a conclusion.</p>
+  <a class="btn" href="{% url 'reviews:assessment' review.pk %}#q-{{ rq.pk }}">← Back to the question</a>
+</div>
+{% endblock %}

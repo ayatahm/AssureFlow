@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}Technical scope · {{ review.reference }}{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<div class="split">
+  <div class="card" style="padding:0">
+    <div class="card-head" style="padding:16px 20px 0"><h2>Technical testing guidance</h2><span class="small muted">Catalogue {{ review.technical_catalogue.version }} · guidance only; AssureFlow does not execute tests</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Item</th><th>Guidance</th><th>Tags</th><th>Status</th><th>Result</th><th></th></tr></thead>
+      <tbody>
+      {% for item in items %}
+        <tr class="{% if not item.included %}skipped{% endif %}">
+          <td class="mono">{{ item.control.source_id }}</td>
+          <td><strong>{{ item.control.control_name }}</strong><div class="small muted">{{ item.control.testing_process }}</div></td>
+          <td>{% for t in item.control.tags.all %}<span class="badge badge-navy">{{ t.label }}</span> {% endfor %}</td>
+          <td>{% if item.included %}<span class="badge badge-green">Included</span>{% else %}<span class="badge badge-grey">Excluded</span><div class="small muted">{{ item.exclusion_reason }}</div>{% endif %}
+              {% if item.added_by_reviewer %}<span class="badge badge-gold">Added by Reviewer</span>{% endif %}</td>
+          <td>{{ item.get_result_display|default:"—" }}{% if item.findings.all %}<div class="small">{{ item.findings.all|length }} finding(s)</div>{% endif %}</td>
+          <td><a class="btn btn-sm" href="{% url 'reviews:technical_item' review.pk item.pk %}">Open</a></td>
+        </tr>
+      {% empty %}<tr><td colspan="6" class="empty">No technical guidance selected for the proposed scope.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+  <aside>
+    <div class="card accent">
+      <h3>Technical scope</h3>
+      <p>{% for t in scope_tags %}<span class="badge {% if t.removed_at_confirmation %}badge-muted{% else %}badge-navy{% endif %}">{{ t.scope_tag.label }}</span> {% empty %}<span class="muted">No tags proposed.</span>{% endfor %}</p>
+      {% if review.scope_confirmed_at %}<p class="small">Confirmed by {{ review.scope_confirmed_by.full_name }} on {{ review.scope_confirmed_at|date:"j M Y H:i" }}{% if review.scope_confirmation_note %}: {{ review.scope_confirmation_note }}{% endif %}</p>
+      {% else %}<p class="small notice">Not yet confirmed by the Reviewer.</p>{% endif %}
+      {% if perm.scope_confirm %}
+        <form method="post" action="{% url 'reviews:scope_confirm' review.pk %}" novalidate>{% csrf_token %}
+          {% include "components/field.html" with f=scope_form.tags %}
+          {% include "components/field.html" with f=scope_form.note %}
+          <button class="btn btn-primary" type="submit">Confirm scope</button>
+        </form>
+      {% endif %}
+    </div>
+    {% if perm.technical_edit and add_form %}
+    <div class="card">
+      <h3>Add catalogue item</h3>
+      <form method="post" action="{% url 'reviews:technical_add' review.pk %}">{% csrf_token %}
+        {% include "components/field.html" with f=add_form.control %}
+        <button class="btn" type="submit">Add as Reviewer</button>
+      </form>
+    </div>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

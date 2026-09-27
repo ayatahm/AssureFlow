@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{% if creating %}New Security Review{% else %}Edit intake{% endif %}{% endblock %}
+{% block content %}
+{% if review %}{% include "components/review_header.html" %}{% endif %}
+{% include "reviews/_steps.html" %}
+<div class="page-head"><div><div class="eyebrow">Step 1 · Project details</div>
+<h1>{% if creating %}New Security Review{% else %}Edit intake{% endif %}</h1>
+<div class="sub">The request type is context for reporting. The assessment itself is tailored from triage answers.</div></div></div>
+<form method="post" class="card accent" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="notice danger">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="form-grid">
+    {% include "components/field.html" with f=form.title full=1 %}
+    {% include "components/field.html" with f=form.request_type full=1 %}
+    {% include "components/field.html" with f=form.department %}
+    {% include "components/field.html" with f=form.project_owner %}
+    {% include "components/field.html" with f=form.target_date %}
+    {% include "components/field.html" with f=form.external_ref %}
+    {% if form.assigned_reviewer %}{% include "components/field.html" with f=form.assigned_reviewer %}{% endif %}
+    {% if form.requester %}{% include "components/field.html" with f=form.requester %}{% endif %}
+    {% include "components/field.html" with f=form.purpose full=1 %}
+    {% include "components/field.html" with f=form.goals full=1 %}
+    {% include "components/field.html" with f=form.scope_tags full=1 %}
+  </div>
+  <div class="actions">
+    <button class="btn" type="submit" name="save">Save Draft</button>
+    <button class="btn btn-primary" type="submit" name="continue">Continue to Triage →</button>
+  </div>
+</form>
+{% endblock %}

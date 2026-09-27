@@ -1,0 +1,89 @@
+{
+  "format": "assureflow-ruleset-v1",
+  "synthetic": true,
+  "version": "SYN-DEMO-1.0",
+  "label": "SYNTHETIC DEMO rule set — invented for development, not NBB content",
+  "notes": "All questions, controls, gates and levels in this file are invented examples.",
+  "triage_questions": [
+    {"code": "impact", "kind": "LEVEL", "options": ["LOW", "MODERATE", "HIGH"], "text": "[Demo] Project impact level", "help_text": "How much would a failure of this system affect the organisation?"},
+    {"code": "value", "kind": "LEVEL", "options": ["LOW", "MODERATE", "HIGH"], "text": "[Demo] Business value level", "help_text": "How valuable is the information or service to the business?"},
+    {"code": "T1", "kind": "YES_NO", "text": "[Demo] Will the system store or process personal data?", "help_text": "Names, identity numbers, contact details or similar."},
+    {"code": "T2", "kind": "YES_NO", "text": "[Demo] Will the system be reachable from the internet?", "help_text": "Including through a vendor portal."},
+    {"code": "T3", "kind": "YES_NO", "text": "[Demo] Is a third party hosting or operating the system?", "help_text": "SaaS, managed service or outsourced operation."},
+    {"code": "T4", "kind": "YES_NO", "text": "[Demo] Will it process payments or financial transactions?", "help_text": ""},
+    {"code": "T5", "kind": "YES_NO", "text": "[Demo] Will it integrate with other systems through APIs?", "help_text": ""},
+    {"code": "T6", "kind": "YES_NO", "text": "[Demo] Will privileged or administrative access be required?", "help_text": ""},
+    {"code": "T7", "kind": "YES_NO", "text": "[Demo] Will external customers use it directly?", "help_text": ""},
+    {"code": "T8", "kind": "YES_NO", "text": "[Demo] Does it involve new hardware or physical devices?", "help_text": ""}
+  ],
+  "classification": {
+    "default": "PUBLIC",
+    "rules": [
+      {"when": {"all": [{"q": "impact", "eq": "HIGH"}, {"q": "value", "eq": "HIGH"}, {"q": "T4", "eq": "YES"}]}, "result": "SECRET", "reason": "[Demo] High impact, high value and financial transactions."},
+      {"when": {"any": [{"q": "T1", "eq": "YES"}, {"q": "T4", "eq": "YES"}, {"q": "impact", "eq": "HIGH"}]}, "result": "CONFIDENTIAL", "reason": "[Demo] Personal data, financial transactions or high impact."},
+      {"when": {"any": [{"q": "T2", "eq": "YES"}, {"q": "T7", "eq": "YES"}, {"q": "value", "in": ["MODERATE", "HIGH"]}]}, "result": "SENSITIVE", "reason": "[Demo] Internet exposure, customer use or moderate/high value."}
+    ]
+  },
+  "routing": [
+    {"code": "third_party_review", "label": "Third-party security review", "when": {"q": "T3", "eq": "YES"}},
+    {"code": "privacy_review", "label": "Privacy review", "when": {"q": "T1", "eq": "YES"}},
+    {"code": "internet_exposure", "label": "Internet exposure", "when": {"q": "T2", "eq": "YES"}}
+  ],
+  "gates": [
+    {"code": "G-PD", "question": "T1", "skip_when": {"q": "T1", "eq": "NO"}, "note": "[Demo] No personal data."},
+    {"code": "G-NET", "question": "T2", "skip_when": {"q": "T2", "eq": "NO"}, "note": "[Demo] Not internet-facing."},
+    {"code": "G-3P", "question": "T3", "skip_when": {"q": "T3", "eq": "NO"}, "note": "[Demo] No third party involved."},
+    {"code": "G-PAY", "question": "T4", "skip_when": {"q": "T4", "eq": "NO"}, "note": "[Demo] No financial transactions."},
+    {"code": "G-API", "question": "T5", "skip_when": {"q": "T5", "eq": "NO"}, "note": "[Demo] No API integration."},
+    {"code": "G-PRIV", "question": "T6", "skip_when": {"q": "T6", "eq": "NO"}, "note": "[Demo] No privileged access."},
+    {"code": "G-HW", "question": "T8", "skip_when": {"q": "T8", "eq": "NO"}, "note": "[Demo] No new hardware."}
+  ],
+  "controls": [
+    {"code": "SYN-GV-01", "domain": "Governance", "title": "Named system owner", "description": "A named, accountable owner exists for the system.", "gates": [], "levels": {"PUBLIC": "OPTIONAL", "SENSITIVE": "OPTIONAL", "CONFIDENTIAL": "OPTIONAL", "SECRET": "OPTIONAL"}, "questions": ["AQ-00"], "framework_refs": [{"framework": "Demo Framework", "reference": "DF-1.1", "description": "Ownership (invented)"}]},
+    {"code": "SYN-AC-01", "domain": "Access control", "title": "Role-based access control", "description": "Access is granted by role and least privilege.", "gates": [], "levels": {"PUBLIC": "RECOMMENDED", "SENSITIVE": "REQUIRED", "CONFIDENTIAL": "REQUIRED", "SECRET": "REQUIRED"}, "questions": ["AQ-01"], "framework_refs": [{"framework": "Demo Framework", "reference": "DF-2.1", "description": "Access control (invented)"}]},
+    {"code": "SYN-AC-02", "domain": "Access control", "title": "Strong authentication for privileged access", "description": "Privileged accounts use multi-factor authentication.", "gates": ["G-PRIV"], "levels": {"PUBLIC": "OPTIONAL", "SENSITIVE": "RECOMMENDED", "CONFIDENTIAL": "REQUIRED", "SECRET": "REQUIRED"}, "questions": ["AQ-02"], "framework_refs": []},
+    {"code": "SYN-AC-03", "domain": "Access control", "title": "Joiner / mover / leaver process", "description": "Accounts are created, changed and removed through a defined process.", "gates": [], "levels": {"PUBLIC": "OPTIONAL", "SENSITIVE": "OPTIONAL", "CONFIDENTIAL": "RECOMMENDED", "SECRET": "REQUIRED"}, "questions": ["AQ-03"], "framework_refs": []},
+    {"code": "SYN-DP-01", "domain": "Data protection", "title": "Encryption of personal data at rest", "description": "Stored personal data is encrypted.", "gates": ["G-PD"], "levels": {"PUBLIC": "OPTIONAL", "SENSITIVE": "RECOMMENDED", "CONFIDENTIAL": "REQUIRED", "SECRET": "REQUIRED"}, "questions": ["AQ-04"], "framework_refs": [{"framework": "Demo Framework", "reference": "DF-3.2", "description": "Cryptography (invented)"}]},
+    {"code": "SYN-DP-02", "domain": "Data protection", "title": "Encryption in transit", "description": "Network traffic carrying business data is encrypted.", "gates": [], "levels": {"PUBLIC": "RECOMMENDED", "SENSITIVE": "REQUIRED", "CONFIDENTIAL": "REQUIRED", "SECRET": "REQUIRED"}, "questions": ["AQ-05"], "framework_refs": []},
+    {"code": "SYN-DP-03", "domain": "Data protection", "title": "Personal data retention", "description": "Retention periods are defined and enforced.", "gates": ["G-PD"], "levels": {"PUBLIC": "OPTIONAL", "SENSITIVE": "OPTIONAL", "CONFIDENTIAL": "RECOMMENDED", "SECRET": "REQUIRED"}, "questions": ["AQ-06"], "framework_refs": []},
+    {"code": "SYN-NW-01", "domain": "Network", "title": "Perimeter protection for internet-facing services", "description": "Internet-facing services sit behind filtering and rate limiting.", "gates": ["G-NET"], "levels": {"PUBLIC": "RECOMMENDED", "SENSITIVE": "REQUIRED", "CONFIDENTIAL": "REQUIRED", "SECRET": "REQUIRED"}, "questions": ["AQ-07"], "framework_refs": []},
+    {"code": "SYN-NW-02", "domain": "Network", "title": "Authenticated API integration", "description": "APIs authenticate callers and validate input.", "gates": ["G-API"], "levels": {"PUBLIC": "RECOMMENDED", "SENSITIVE": "REQUIRED", "CONFIDENTIAL": "REQUIRED", "SECRET": "REQUIRED"}, "questions": ["AQ-08"], "framework_refs": []},
+    {"code": "SYN-LG-01", "domain": "Logging", "title": "Security event logging", "description": "Security-relevant events are logged.", "gates": [], "levels": {"PUBLIC": "OPTIONAL", "SENSITIVE": "RECOMMENDED", "CONFIDENTIAL": "REQUIRED", "SECRET": "REQUIRED"}, "questions": ["AQ-09"], "framework_refs": []},
+    {"code": "SYN-LG-02", "domain": "Logging", "title": "Log monitoring", "description": "Security logs are reviewed or monitored.", "gates": [], "levels": {"PUBLIC": "OPTIONAL", "SENSITIVE": "OPTIONAL", "CONFIDENTIAL": "RECOMMENDED", "SECRET": "REQUIRED"}, "questions": ["AQ-09"], "framework_refs": []},
+    {"code": "SYN-TP-01", "domain": "Third party", "title": "Vendor security assessment", "description": "The vendor's security posture has been assessed.", "gates": ["G-3P"], "levels": {"PUBLIC": "RECOMMENDED", "SENSITIVE": "REQUIRED", "CONFIDENTIAL": "REQUIRED", "SECRET": "REQUIRED"}, "questions": ["AQ-10"], "framework_refs": []},
+    {"code": "SYN-TP-02", "domain": "Third party", "title": "Contractual security clauses", "description": "Contracts include security and breach-notification clauses.", "gates": ["G-3P"], "levels": {"PUBLIC": "OPTIONAL", "SENSITIVE": "RECOMMENDED", "CONFIDENTIAL": "REQUIRED", "SECRET": "REQUIRED"}, "questions": ["AQ-10", "AQ-11"], "framework_refs": []},
+    {"code": "SYN-VM-01", "domain": "Operations", "title": "Patch management", "description": "Security patches are applied within defined timelines.", "gates": [], "levels": {"PUBLIC": "RECOMMENDED", "SENSITIVE": "REQUIRED", "CONFIDENTIAL": "REQUIRED", "SECRET": "REQUIRED"}, "questions": ["AQ-12"], "framework_refs": []},
+    {"code": "SYN-BC-01", "domain": "Operations", "title": "Backup and recovery", "description": "Backups exist and restoration has been tested.", "gates": [], "levels": {"PUBLIC": "OPTIONAL", "SENSITIVE": "RECOMMENDED", "CONFIDENTIAL": "REQUIRED", "SECRET": "REQUIRED"}, "questions": ["AQ-13"], "framework_refs": []},
+    {"code": "SYN-HW-01", "domain": "Hardware", "title": "Device hardening", "description": "New devices are hardened before deployment.", "gates": ["G-HW"], "levels": {"PUBLIC": "RECOMMENDED", "SENSITIVE": "REQUIRED", "CONFIDENTIAL": "REQUIRED", "SECRET": "REQUIRED"}, "questions": ["AQ-14"], "framework_refs": []},
+    {"code": "SYN-PY-01", "domain": "Transactions", "title": "Transaction integrity controls", "description": "Financial transactions are protected against tampering.", "gates": ["G-PAY"], "levels": {"PUBLIC": "REQUIRED", "SENSITIVE": "REQUIRED", "CONFIDENTIAL": "REQUIRED", "SECRET": "REQUIRED"}, "questions": ["AQ-15"], "framework_refs": []}
+  ],
+  "assessment_questions": [
+    {"code": "AQ-00", "section": "Governance", "text": "[Demo] Has a named system owner been identified and agreed?", "always_ask": true},
+    {"code": "AQ-01", "section": "Access control", "text": "[Demo] Is access granted by role, following least privilege?"},
+    {"code": "AQ-02", "section": "Access control", "text": "[Demo] Do privileged accounts require multi-factor authentication?"},
+    {"code": "AQ-03", "section": "Access control", "text": "[Demo] Is there a defined joiner/mover/leaver process for accounts?"},
+    {"code": "AQ-04", "section": "Data protection", "text": "[Demo] Is personal data encrypted at rest?"},
+    {"code": "AQ-05", "section": "Data protection", "text": "[Demo] Is all network traffic encrypted in transit (e.g. TLS 1.2+)?"},
+    {"code": "AQ-06", "section": "Data protection", "text": "[Demo] Are retention periods for personal data defined and enforced?"},
+    {"code": "AQ-07", "section": "Network", "text": "[Demo] Is the internet-facing service protected by filtering and rate limiting?"},
+    {"code": "AQ-08", "section": "Network", "text": "[Demo] Do all APIs authenticate callers and validate input?"},
+    {"code": "AQ-09", "section": "Logging", "text": "[Demo] Are security events logged and reviewed?"},
+    {"code": "AQ-10", "section": "Third party", "text": "[Demo] Has the vendor completed a security assessment or provided an independent report?"},
+    {"code": "AQ-11", "section": "Third party", "text": "[Demo] Does the contract include security and breach-notification clauses?"},
+    {"code": "AQ-12", "section": "Operations", "text": "[Demo] Are security patches applied within defined timelines?"},
+    {"code": "AQ-13", "section": "Operations", "text": "[Demo] Are backups taken and has a restore been tested?"},
+    {"code": "AQ-14", "section": "Hardware", "text": "[Demo] Will new devices be hardened to a documented baseline?"},
+    {"code": "AQ-15", "section": "Transactions", "text": "[Demo] Are financial transactions protected against tampering and replay?"}
+  ],
+  "compliance_guidance": [
+    {"level": "REQUIRED", "decision": "WILL_COMPLY", "text": "[Demo] Provide evidence of implementation before go-live."},
+    {"level": "REQUIRED", "decision": "WILL_NOT_COMPLY", "text": "[Demo] A Required control that will not be met needs a Reviewer exception and, for residual exposure, Formal Business Risk Acceptance."},
+    {"level": "REQUIRED", "decision": "EXCEPTION_GRANTED", "text": "[Demo] Reviewer exception recorded. Residual exposure still requires a Business Owner decision."},
+    {"level": "RECOMMENDED", "decision": "WILL_COMPLY", "text": "[Demo] Implement where practical and record evidence."},
+    {"level": "RECOMMENDED", "decision": "WILL_NOT_COMPLY", "text": "[Demo] Record the reason; the Reviewer judges whether residual risk needs acceptance."},
+    {"level": "RECOMMENDED", "decision": "EXCEPTION_GRANTED", "text": "[Demo] Reviewer exception recorded for a Recommended control."},
+    {"level": "OPTIONAL", "decision": "WILL_COMPLY", "text": "[Demo] Optional control adopted voluntarily."},
+    {"level": "OPTIONAL", "decision": "WILL_NOT_COMPLY", "text": "[Demo] Optional control not adopted; no further action normally required."},
+    {"level": "OPTIONAL", "decision": "EXCEPTION_GRANTED", "text": "[Demo] Exceptions are not normally needed for Optional controls."}
+  ]
+}

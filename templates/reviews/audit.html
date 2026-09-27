@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Activity · {{ review.reference }}{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<div class="card" style="padding:0">
+  <table>
+    <thead><tr><th>When</th><th>Actor</th><th>Event</th><th>Object</th><th>Detail</th></tr></thead>
+    <tbody>
+    {% for e in events %}
+      <tr><td class="nowrap small">{{ e.timestamp|date:"j M Y H:i:s" }}</td><td>{{ e.actor.full_name|default:"System" }}</td>
+      <td class="mono">{{ e.action }}</td><td class="small">{{ e.object_type }} {{ e.object_id }}</td>
+      <td class="small">{% for k, v in e.detail.items %}<span class="muted">{{ k }}</span>: {{ v }}{% if not forloop.last %} · {% endif %}{% endfor %}</td></tr>
+    {% empty %}<tr><td colspan="5" class="empty">No events.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="small muted">Audit events are append-only; they cannot be edited or deleted through the application or the database runtime role.</p>
+{% endblock %}

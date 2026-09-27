@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}Risk Acceptance · {{ review.reference }}{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<div class="split">
+  <div>
+    {% for acc in acceptances %}
+    <div class="card {% if acc.state == 'ACCEPTED' %}ok{% elif acc.state == 'DECLINED' %}danger{% elif acc.state == 'PENDING' %}warn{% endif %}">
+      <div class="card-head"><h3><a href="{% url 'assurance:decide' acc.pk %}">{{ acc.code }}</a> · Business Owner {{ acc.business_owner.full_name }}</h3>{% badge acc.state %}</div>
+      <div class="kv">
+        <span class="k">Covered items</span><span>{% for it in acc.items.all %}<span class="badge badge-navy">{% if it.review_requirement %}{{ it.review_requirement.control.code }}{% else %}{{ it.technical_item.control.source_id }}{% endif %}</span> {% endfor %}</span>
+        <span class="k">Risk presented</span><span>R-{{ acc.risk_record_id }} · residual {% badge acc.risk_record.residual %}{% if latest_risk and acc.risk_record_id != latest_risk.pk %} <span class="badge badge-grey">superseded by a later risk record</span>{% endif %}</span>
+        <span class="k">Review / expiry</span><span>{{ acc.review_date|date:"j M Y" }} / {{ acc.expiry_date|date:"j M Y" }}</span>
+        {% if acc.decided_at %}<span class="k">Decision</span><span>{{ acc.decided_at|date:"j M Y H:i" }} — {{ acc.decision_note }}</span>{% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="card empty">No Formal Business Risk Acceptance has been requested. It is only used when unresolved exposure remains.</div>
+    {% endfor %}
+  </div>
+  <aside>
+    {% if form %}
+    <form method="post" class="card accent" novalidate>{% csrf_token %}
+      <h3>Prepare acceptance request</h3>
+      {% if not gaps and not technical %}<p class="small notice info">There are no current Security Gaps or unresolved technical findings to cover.</p>{% endif %}
+      {% include "components/field.html" with f=form.requirements %}
+      {% include "components/field.html" with f=form.technical_items %}
+      <div class="small" style="margin-bottom:10px">Residual risk presented: {% if latest_risk %}R-{{ latest_risk.pk }} {% badge latest_risk.residual %} <span class="muted">(read-only, from the latest RiskRecord)</span>{% else %}<span class="badge badge-red">Record risk first</span>{% endif %}</div>
+      {% include "components/field.html" with f=form.justification %}
+      {% include "components/field.html" with f=form.compensating_controls %}
+      {% include "components/field.html" with f=form.conditions %}
+      <div class="grid grid-2">{% include "components/field.html" with f=form.review_date %}{% include "components/field.html" with f=form.expiry_date %}</div>
+      {% include "components/field.html" with f=form.business_owner %}
+      <button class="btn btn-brand" type="submit">Request Acceptance</button>
+      <p class="small muted" style="margin-top:6px">Sending locks the covered items, risk record and terms.</p>
+    </form>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

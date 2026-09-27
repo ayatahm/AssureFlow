@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load af %}
+{% block title %}{{ acc.code }} · Risk acceptance{% endblock %}
+{% block content %}
+{% include "components/review_header.html" %}
+<div class="page-head"><div><div class="eyebrow">Formal Business Risk Acceptance {{ acc.code }}</div><h2 style="margin:0">Decision requested from {{ acc.business_owner.full_name }}</h2>
+<div class="sub">Requested by {{ acc.created_by.full_name }} on {{ acc.created_at|date:"j M Y" }} · {% badge acc.state %}</div></div></div>
+<div class="split">
+  <div>
+    <div class="card">
+      <h3>Unresolved items covered</h3>
+      {% for e in items %}
+        <div style="padding:10px 0;border-bottom:1px solid #EEF1F6">
+          {% if e.item.review_requirement %}
+            <strong class="mono">{{ e.target.control.code }}</strong> {{ e.target.control.title }} {% badge e.target.level %}
+            <div class="small">Reviewer conclusion: {% badge e.conclusion.status %} {% if e.conclusion.notes %}— {{ e.conclusion.notes }}{% endif %}</div>
+            <div class="small">Project Compliance Decision: {% if e.compliance %}{{ e.compliance.get_decision_display }}{% else %}<span class="muted">none</span>{% endif %}</div>
+            <div class="small"><a href="{% url 'assurance:trace' review.pk e.target.pk %}">Assurance Trace →</a></div>
+          {% else %}
+            <strong class="mono">{{ e.target.control.source_id }}</strong> {{ e.target.control.control_name }} (technical finding)
+            {% for f in e.findings %}<div class="small">{{ f.code }} {{ f.title }} {% badge f.priority %}</div>{% endfor %}
+          {% endif %}
+          {% if e.evidence %}<div class="small">Evidence: {% for l in e.evidence %}<a href="{% url 'assurance:evidence_download' l.evidence.pk %}">{{ l.evidence.original_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</div>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    <div class="card">
+      <h3>Risk judgement presented (R-{{ acc.risk_record.pk }})</h3>
+      <div class="kv"><span class="k">Inherent</span><span>{% badge acc.risk_record.inherent %}</span><span class="k">Residual</span><span>{% badge acc.risk_record.residual %}</span>
+      <span class="k">Assessed by</span><span>{{ acc.risk_record.assessed_by.full_name }}, {{ acc.risk_record.assessed_at|date:"j M Y" }}</span></div>
+      <p class="pre small" style="margin-top:8px">{{ acc.risk_record.rationale }}</p>
+    </div>
+    <div class="card">
+      <dl class="facts">
+        <dt>Justification</dt><dd class="pre">{{ acc.justification }}</dd>
+        <dt>Compensating controls</dt><dd class="pre">{{ acc.compensating_controls }}</dd>
+        <dt>Conditions</dt><dd class="pre">{{ acc.conditions }}</dd>
+        <dt>Review date</dt><dd>{{ acc.review_date|date:"j M Y" }}</dd>
+        <dt>Expiry date</dt><dd>{{ acc.expiry_date|date:"j M Y" }}</dd>
+      </dl>
+    </div>
+  </div>
+  <aside>
+    {% if can_decide %}
+    <form method="post" class="card accent" novalidate>{% csrf_token %}
+      <h3>Your decision</h3>
+      <div class="notice">Accepting this risk does not mark the security control as Verified.</div>
+      <div class="notice danger">This records a declined treatment decision if you decline. The assessment may finish with unresolved requirements; it does not authorise implementation.</div>
+      {% include "components/field.html" with f=form.decision %}
+      {% include "components/field.html" with f=form.note %}
+      <button class="btn btn-brand" type="submit">Record decision</button>
+    </form>
+    {% else %}
+    <div class="card">
+      <h3>Decision</h3>
+      <p>{% badge acc.state %}</p>
+      {% if acc.decided_at %}<p class="small">{{ acc.decided_at|date:"j M Y H:i" }}</p><p class="pre">{{ acc.decision_note }}</p>{% else %}<p class="muted small">Awaiting the Business Owner.</p>{% endif %}
+    </div>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}
